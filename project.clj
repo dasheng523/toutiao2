@@ -29,7 +29,7 @@
                  [org.clojure/tools.logging "0.4.0"]
                  [org.clojure/tools.reader "1.1.0"]
                  [org.webjars.bower/tether "1.4.0"]
-                 [org.webjars/bootstrap "4.0.0-alpha.5"]
+                 [org.webjars/bootstrap "4.0.0-beta.2"]
                  [org.webjars/font-awesome "4.7.0"]
                  [re-frame "0.10.2"]
                  [reagent "0.7.0"]
@@ -39,7 +39,8 @@
                  [ring/ring-defaults "0.3.1"]
                  [ring/ring-servlet "1.4.0"]
                  [secretary "1.2.3"]
-                 [selmer "1.11.3"]]
+                 [selmer "1.11.3"]
+                 [day8.re-frame/http-fx "0.1.4"]]
 
   :min-lein-version "2.0.0"
 

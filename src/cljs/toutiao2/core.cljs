@@ -9,7 +9,7 @@
             [toutiao2.ajax :refer [load-interceptors!]]
             [toutiao2.events]
             [toutiao2.subs]
-            [toutiao2.views :refer [toutiao-account]])
+            [toutiao2.views :refer [toutiao-page]])
   (:import goog.History))
 
 (defn nav-link [uri title page collapsed?]
@@ -30,7 +30,7 @@
       [:a.navbar-brand {:href "#/"} "toutiao2"]
       [:ul.nav.navbar-nav
        [nav-link "#/" "Home" :home collapsed?]
-       [nav-link "#/account" "Account" :users collapsed?]
+       [nav-link "#/toutiao" "头条" :users collapsed?]
        [nav-link "#/about" "About" :about collapsed?]]]]))
 
 (defn about-page []
@@ -39,11 +39,6 @@
     [:div.col-md-12
      [:img {:src (str js/context "/img/warning_clojure.png")}]]]])
 
-(defn account-page []
-  [:div.container
-   [:div.row
-    [:div.col-md-12
-     [toutiao-account]]]])
 
 (defn home-page []
   [:div.container
@@ -55,7 +50,7 @@
 (def pages
   {:home #'home-page
    :about #'about-page
-   :account #'account-page})
+   :toutiao #'toutiao-page})
 
 (defn page []
   [:div
@@ -72,8 +67,8 @@
 (secretary/defroute "/about" []
   (rf/dispatch [:set-active-page :about]))
 
-(secretary/defroute "/account" []
-  (rf/dispatch [:set-active-page :account]))
+(secretary/defroute "/toutiao" []
+  (rf/dispatch [:set-active-page :toutiao]))
 
 ;; -------------------------
 ;; History

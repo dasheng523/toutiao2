@@ -4,21 +4,13 @@
 
 ;;subscriptions
 
-(reg-sub
-  :page
-  (fn [db _]
-    (:page db)))
+(defn reg-simple-sub [k]
+  (reg-sub
+    k
+    (fn [db _]
+      (k db))))
 
-(reg-sub
-  :docs
-  (fn [db _]
-    (:docs db)))
-
-(reg-sub
-  :toutiao-account
-  (fn [db _]
-    (:toutiao-account db)))
-
-
-(defn listen [k]
-  @(rf/subscribe k))
+(reg-simple-sub :page)
+(reg-simple-sub :docs)
+(reg-simple-sub :toutiao-accounts)
+(reg-simple-sub :current-account)
