@@ -66,6 +66,7 @@
 (reg-simple-event :set-active-page :page)
 ;; 读文档事件
 (reg-simple-event :set-docs :docs)
+(reg-simple-event :show-create-toutiao-account-view :toutiao-account-visible?)
 (reg-simple-ajax-event :init-toutiao-accounts :toutiao-accounts)
 (reg-simple-event :set-current-account :current-account)
 

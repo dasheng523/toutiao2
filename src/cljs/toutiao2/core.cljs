@@ -12,26 +12,27 @@
             [toutiao2.views :refer [toutiao-page]])
   (:import goog.History))
 
-(defn nav-link [uri title page collapsed?]
+(defn nav-link [uri title page]
   (let [selected-page (rf/subscribe [:page])]
     [:li.nav-item
      {:class (when (= page @selected-page) "active")}
-     [:a.nav-link
-      {:href uri
-       :on-click #(reset! collapsed? true)} title]]))
+     [:a.nav-link {:href uri} title]]))
+
 
 (defn navbar []
-  (r/with-let [collapsed? (r/atom true)]
-    [:nav.navbar.navbar-dark.bg-primary
-     [:button.navbar-toggler.hidden-sm-up
-      {:on-click #(swap! collapsed? not)} "☰"]
-     [:div.collapse.navbar-toggleable-xs
-      (when-not @collapsed? {:class "in"})
-      [:a.navbar-brand {:href "#/"} "toutiao2"]
-      [:ul.nav.navbar-nav
-       [nav-link "#/" "Home" :home collapsed?]
-       [nav-link "#/toutiao" "头条" :users collapsed?]
-       [nav-link "#/about" "About" :about collapsed?]]]]))
+  (r/with-let
+    [show? (r/atom false)]
+    (fn []
+      [:nav.navbar {:class "navbar-expand-lg navbar-dark bg-primary"}
+       [:a.navbar-brand {:href "#"} "Home"]
+       [:button.navbar-toggler
+        {:on-click #(swap! show? not)}
+        [:span.navbar-toggler-icon]]
+       [:div {:class (str "collapse navbar-collapse " (when @show? "show"))}
+        [:ul.navbar-nav
+         [nav-link "#/" "Home" :home]
+         [nav-link "#/toutiao" "头条" :toutiao]
+         [nav-link "#/about" "About" :about]]]])))
 
 (defn about-page []
   [:div.container

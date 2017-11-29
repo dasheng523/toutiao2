@@ -13,3 +13,4 @@ profiles.clj
 *.iml
 .idea/
 *.log
+*.db

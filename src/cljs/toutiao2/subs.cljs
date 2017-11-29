@@ -3,7 +3,6 @@
             [re-frame.core :as rf]))
 
 ;;subscriptions
-
 (defn reg-simple-sub [k]
   (reg-sub
     k
@@ -14,3 +13,4 @@
 (reg-simple-sub :docs)
 (reg-simple-sub :toutiao-accounts)
 (reg-simple-sub :current-account)
+(reg-simple-sub :toutiao-account-visible?)
