@@ -5,7 +5,7 @@
 
   :dependencies [[buddy "2.0.0"]
                  [ch.qos.logback/logback-classic "1.2.3"]
-                 [cider/cider-nrepl "0.15.0-SNAPSHOT"]
+                 [cider/cider-nrepl "0.15.1"]
                  [clj-oauth "1.5.4"]
                  [clj-time "0.14.0"]
                  [cljs-ajax "0.7.3"]
@@ -23,7 +23,7 @@
                  [metosin/muuntaja "0.3.2"]
                  [metosin/ring-http-response "0.9.0"]
                  [mount "0.1.11"]
-                 [org.clojure/clojure "1.8.0"]
+                 [org.clojure/clojure "1.9.0-RC2"]
                  [org.clojure/clojurescript "1.9.946" :scope "provided"]
                  [org.clojure/tools.cli "0.3.5"]
                  [org.clojure/tools.logging "0.4.0"]
@@ -39,9 +39,11 @@
                  [ring/ring-core "1.6.3"]
                  [ring/ring-defaults "0.3.1"]
                  [ring/ring-servlet "1.4.0"]
-                 [secretary "1.2.3"]
+                 [secretary "1.2.3"]                        ;前端导航
                  [selmer "1.11.3"]
-                 [day8.re-frame/http-fx "0.1.4"]]
+                 [slingshot "0.12.2"]                       ; 异常处理
+                 [day8.re-frame/http-fx "0.1.4"]            ; 前端http
+                 ]
 
   :min-lein-version "2.0.0"
 
