@@ -5,7 +5,7 @@
 
   :dependencies [[buddy "2.0.0"]
                  [ch.qos.logback/logback-classic "1.2.3"]
-                 [cider/cider-nrepl "0.15.1"]
+                 [cider/cider-nrepl "0.15.1-SNAPSHOT"]
                  [clj-oauth "1.5.4"]
                  [clj-time "0.14.0"]
                  [cljs-ajax "0.7.3"]
@@ -16,7 +16,6 @@
                  [funcool/struct "1.1.0"]
                  [luminus-migrations "0.4.2"]
                  [luminus-nrepl "0.1.4"]
-                 [luminus/ring-ttl-session "0.3.1"]
                  [luminus/ring-ttl-session "0.3.2"]
                  [markdown-clj "1.0.1"]
                  [metosin/compojure-api "1.1.11"]
@@ -43,7 +42,14 @@
                  [selmer "1.11.3"]
                  [slingshot "0.12.2"]                       ; 异常处理
                  [day8.re-frame/http-fx "0.1.4"]            ; 前端http
-                 ]
+                 [clj-webdriver/clj-webdriver "0.7.2"]
+                 [etaoin "0.2.1"] ; 跟webdriver一样，是操作浏览器的
+                 [clj-http "3.7.0"]
+                 [enlive "1.1.6"]
+                 [com.taoensso/timbre "4.1.0"]
+                 [cheshire "5.8.0"] ; json
+                 [opencv/opencv "3.3.1"]
+                 [opencv/opencv-native "3.3.1"]]
 
   :min-lein-version "2.0.0"
 
@@ -70,19 +76,19 @@
      :output-to "resources/public/css/screen.css"
      :style "nested"
      :import-path "resources/scss"}]
-  
+
    :auto
    {"sassc"
     {:file-pattern #"\.(scss|sass)$"
      :paths ["resources/scss"]}}
-  
+
   :hooks [leiningen.sassc]
   :uberwar
   {:handler toutiao2.handler/app
    :init toutiao2.handler/init
    :destroy toutiao2.handler/destroy
    :name "toutiao2.war"}
-  
+
   :clean-targets ^{:protect false}
   [:target-path [:cljsbuild :builds :app :compiler :output-dir] [:cljsbuild :builds :app :compiler :output-to]]
   :figwheel
@@ -91,7 +97,6 @@
    :css-dirs ["resources/public/css"]
    :nrepl-middleware
    [cemerick.piggieback/wrap-cljs-repl cider.nrepl/cider-middleware]}
-  
 
   :profiles
   {:uberjar {:omit-source true
@@ -107,8 +112,6 @@
                  :closure-warnings
                  {:externs-validation :off :non-standard-jsdoc :off}
                  :externs ["react/externs/react.js"]}}}}
-             
-             
              :aot :all
              :uberjar-name "toutiao2.jar"
              :source-paths ["env/prod/clj"]
@@ -148,9 +151,6 @@
                       :source-map true
                       :optimizations :none
                       :pretty-print true}}}}
-                  
-                  
-                  
                   :doo {:build "test"}
                   :source-paths ["env/dev/clj"]
                   :resource-paths ["env/dev/resources"]
@@ -167,7 +167,6 @@
                       :main "toutiao2.doo-runner"
                       :optimizations :whitespace
                       :pretty-print true}}}}
-                  
                   }
    :profiles/dev {}
    :profiles/test {}})
