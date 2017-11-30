@@ -1,24 +1,40 @@
-(ns toutiao2.api
+(ns toutiao2.api.qier-api
   (:require [clj-http.client :as http]
             [cheshire.core :as json]
-            [clojure.spec.alpha :as s]))
+            [clojure.string :as str]
+            [clojure.spec.alpha :as s]
+            [toutiao2.utils :as utils]
+            [clojure.spec.test.alpha :as stest]))
 
 (s/check-asserts true)
 
 (def client-id "524ed579c87ddb2dcd0bfd197d321547")
 (def client-secret "515def9db75e46f9fe9ee2c815d93b46ca1919fb")
 (def access-token-url (str "https://auth.om.qq.com/omoauth2/accesstoken?grant_type=clientcredentials&client_id=" client-id "&client_secret=" client-secret))
+(def post-article-url "https://api.om.qq.com/article/clientpubpic")
+(def )
+
+(defn parse-resp
+  [resp]
+  (-> resp
+      (json/parse-string true)
+      (->> (s/assert :toutiao2.api.qier-spec/body))
+      :data))
+
+(defn get-auth-info!
+  []
+  (-> access-token-url
+      (utils/post-ex)
+      (parse-resp)))
 
 
-(s/def ::status (s/and int? #(= 200 %)))
-(s/def ::body string?)
-(s/def ::http-response (s/keys :req-un [::status ::body]))
+(defn post-article! [article access-token]
+  (let [data (merge article {:access_token access-token})]
+    (utils/post-ex post-article-url data)))
 
 
-(s/assert ::http-response {:status 200 :body "dfdfdfd"})
-
-(-> access-token-url
-    (http/post)
-    (->> (s/assert ::http-response))
-    :body
-    (json/parse-string true))
+(post-article!
+  {:title "sdfsdfsdfsdf"
+   :content "sdfasdfasdfasdfff"
+   :cover_pic "htt://ddfsdfsdf"}
+  "1111")

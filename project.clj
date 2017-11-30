@@ -48,8 +48,8 @@
                  [enlive "1.1.6"]
                  [com.taoensso/timbre "4.1.0"]
                  [cheshire "5.8.0"] ; json
-                 [opencv/opencv "3.3.1"]
-                 [opencv/opencv-native "3.3.1"]]
+                 #_[opencv/opencv "3.3.1"]
+                 #_[opencv/opencv-native "3.3.1"]]
 
   :min-lein-version "2.0.0"
 
