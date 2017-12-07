@@ -12,7 +12,27 @@
 (def client-secret "515def9db75e46f9fe9ee2c815d93b46ca1919fb")
 (def access-token-url (str "https://auth.om.qq.com/omoauth2/accesstoken?grant_type=clientcredentials&client_id=" client-id "&client_secret=" client-secret))
 (def post-article-url "https://api.om.qq.com/article/clientpubpic")
-(def )
+(def token-info (atom []))
+
+(defn reset-token! [token-data]
+  (reset! token-info (assoc token-data :ctime (System/currentTimeMillis))))
+
+(defn current-token []
+  (let [now (System/currentTimeMillis)
+        ctime (:ctime @token-info)
+        expire (:expires_in @token-info)]
+    (if (> (- now ctime) expire)
+      (:access_token @token-info)
+      [reset-token! []])))
+
+
+(defn exec [])
+
+(defn queue [])
+
+(defn insure-token []
+  (:token queue))
+
 
 (defn parse-resp
   [resp]
