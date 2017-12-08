@@ -3,8 +3,8 @@
             [cheshire.core :as json]
             [clojure.string :as str]
             [clojure.spec.alpha :as s]
-            [toutiao2.utils :as utils]
-            [clojure.spec.test.alpha :as stest]))
+            [toutiao2.utils :as utils])
+  (:use [toutiao2.api.qier-spec]))
 
 (s/check-asserts true)
 
@@ -16,22 +16,6 @@
 
 (defn reset-token! [token-data]
   (reset! token-info (assoc token-data :ctime (System/currentTimeMillis))))
-
-(defn current-token []
-  (let [now (System/currentTimeMillis)
-        ctime (:ctime @token-info)
-        expire (:expires_in @token-info)]
-    (if (> (- now ctime) expire)
-      (:access_token @token-info)
-      [reset-token! []])))
-
-
-(defn exec [])
-
-(defn queue [])
-
-(defn insure-token []
-  (:token queue))
 
 
 (defn parse-resp
@@ -47,14 +31,42 @@
       (utils/post-ex)
       (parse-resp)))
 
+(defn current-token!
+  "获取token信息
+  目前没辙，只能这样写了。"
+  []
+  (let [now (System/currentTimeMillis)
+        ctime (:ctime @token-info)
+        expire (:expires_in @token-info)]
+    (if (or (empty? @token-info) (> (/ (- now ctime) 1000) expire))
+      (-> (get-auth-info!)
+          (reset-token!)))
+    (:access_token @token-info)))
 
-(defn post-article! [article access-token]
+
+(defn post-article!
+  "发布文章"
+  [article access-token]
   (let [data (merge article {:access_token access-token})]
     (utils/post-ex post-article-url data)))
 
+#_(post-article!
+    {:title "test title"
+     :content "<p>test content</p><img src=\"https://dn-phphub.qbox.me/uploads/images/201612/10/1/k7wwMpJduq.jpg\">"
+     :cover_pic "https://dn-phphub.qbox.me/uploads/images/201612/10/1/k7wwMpJduq.jpg"}
+    (current-token!))
 
-(post-article!
-  {:title "sdfsdfsdfsdf"
-   :content "sdfasdfasdfasdfff"
-   :cover_pic "htt://ddfsdfsdf"}
-  "1111")
+(defn post-media!
+  "发布视频"
+  [media access-token]
+  (let [data (merge media {:access_token access-token})]
+    (utils/post-multipart-ex post-article-url data)))
+
+#_(post-media!
+  {:title "testmedia"
+   :tags "篮球"
+   :cat 100
+   :desc "test desc"
+   :md5 "1111"
+   :media (clojure.java.io/file "f:/h0513j6olou.mp4")}
+  (current-token!))
