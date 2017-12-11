@@ -3,8 +3,7 @@
             [cheshire.core :as json]
             [clojure.string :as str]
             [clojure.spec.alpha :as s]
-            [toutiao2.utils :as utils])
-  (:use [toutiao2.api.qier-spec]))
+            [toutiao2.utils :as utils]))
 
 (s/check-asserts true)
 
