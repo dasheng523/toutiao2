@@ -48,6 +48,8 @@
                  [enlive "1.1.6"]
                  [com.taoensso/timbre "4.1.0"]
                  [cheshire "5.8.0"] ; json
+                 [dk.ative/docjure "1.11.0"]                ; Excel
+                 [org.clojure/data.csv "0.1.4"]             ; CSV
                  #_[opencv/opencv "3.3.1"]
                  #_[opencv/opencv-native "3.3.1"]]
 
