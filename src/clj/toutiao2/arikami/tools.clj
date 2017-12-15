@@ -5,12 +5,12 @@
 
 (defn- name->url-key [name sku]
   (-> name
+      (str "-" sku)
       (str/lower-case)
-      (str/replace #" " "-")
-      (str sku)))
+      (str/replace #" " "-")))
 
 
-(defn create-magento-product-list [list file]
+(defn create-magento-product-list [list]
   (let [data (map
                (fn [info]
                  {:use_config_max_sale_qty    1
@@ -25,7 +25,7 @@
                   :use_config_enable_qty_inc  0
                   :associated_skus            ""
                   :map_enabled                ""
-                  :swatch_image               (:base_image info)
+                  :swatch_image               ""
                   :bundle_shipment_type       ""
                   :enable_qty_increments      0
                   :new_from_date              ""
@@ -49,7 +49,8 @@
                   :notify_on_stock_below      1
                   :display_product_options_in "Block after Info Column"
                   :upsell_position            ""
-                  :meta_keywords              (get info :meta_keywords)
+                  :meta_keywords              (-> (name->url-key (get info :name "") (get info :sku ""))
+                                                  (str/replace #"-" ","))
                   :short_description          (get info :short_description)
                   :msrp_price                 ""
                   :product_options_container  ""
@@ -68,7 +69,7 @@
                   :categories                 (:categories info)
                   :product_websites           "base"
                   :special_price_to_date      nil
-                  :weight                     (get info :weight "")
+                  :weight                     (/ (get info :weight 0) 1000)
                   :max_cart_qty               1000
                   :use_config_qty_increments  1
                   :additional_image_labels    (get info :additional_image_labels nil)
@@ -90,7 +91,7 @@
                   :use_config_notify_stock_qty 1
                   :price (:price info)
                   :new_to_date ""
-                  :visibility "Catalog, Search"
+                  :visibility (if (= (get info :product_type "simple") "simple") "Search" "Catalog, Search")
                   :attribute_set_code "Default"
                   :configurable_variation_labels ""
                   :store_view_code ""
@@ -101,40 +102,7 @@
                   :base_image_label ""
                   :page_layout ""})
                list)]
-    (utils/maps->csv-file data file)))
-
-#_(create-magento-product-list
-  [{:name ":name"
-    :price ":price"
-    :base_image ":base_image"
-    :additional_images ":additional_images"
-    :sku ":sku"
-    :categories ":categories"
-    :product_type ":product_type"
-    :configurable_variations ":configurable_variations"
-    :meta_title ":meta_title"
-    :meta_keywords ":meta_keywords"
-    :meta_description ":meta_description"
-    :short_description ":short_description"
-    :description ":description"
-    :additional_attributes ":additional_attributes"
-    :weight ":weight"}
-   {:description "",
-    :configurable_variations nil,
-    :meta_title nil,
-    :name "",
-    :meta_keywords nil,
-    :short_description nil,
-    :product_type "simple",
-    :sku "XMMB2",
-    :base_image "ConsumerElectronics/SmartEletronics/WearableDevices/XMMB2/SC-XMMB2-1.jpg",
-    :additional_images "ConsumerElectronics/SmartEletronics/WearableDevices/XMMB2/SC-XMMB2-1.jpg;ConsumerElectronics/SmartEletronics/WearableDevices/XMMB2/SC-XMMB2-2.jpg;ConsumerElectronics/SmartEletronics/WearableDevices/XMMB2/SC-XMMB2-3.jpg",
-    :categories "Default Category/Consumer Electronics,Default Category/Consumer Electronics/Smart Eletronics,Default Category/Consumer Electronics/Smart Eletronics/Wearable Devices",
-    :weight 70.0,
-    :meta_description nil,
-    :additional_attributes "color=Black,material=Aluminum+Plastic,size=15.7*10.5*40.3mm",
-    :price 32.99}]
-  "g:/2224.csv")
+    data))
 
 
 (defn get-attrs [data]
@@ -157,13 +125,18 @@
       (maps->string-format)))
 
 (defn generate-description [data]
-  (let [img-str (-> (str/split (:des_image data) #";")
-                    (->> (map #(str "http://www.arikami.com/media/Products/" %)))
-                    (->> (map #(str "<img src=\"" % "\">")))
-                    (->> (str/join "\n")))]
-    (if (> (count (:description_en data)) 0)
-      (str (:description_en data) "\n" img-str)
-      img-str)))
+  (let [img-str (if (string? (:des_image data))
+                    (-> (str/split (:des_image data) #";")
+                        (->> (map #(str "http://www.arikami.com/media/Products/" %)))
+                        (->> (map #(str "<img src=\"" % "\">")))
+                        (->> (str/join "\n"))))
+        desc (if (> (count (:description_en data)) 0)
+               (-> (:description_en data)
+                   (str/split #"\n")
+                   (->> (map #(str "<p>" % "</p>"))
+                        (str/join "\n"))))]
+    (str desc "\n" img-str)))
+
 
 (defn convert-configvar [data list]
   (if (= (:product_type data) "configurable")
@@ -192,6 +165,7 @@
    :description (generate-description data)
    :additional_attributes (convert-addattr data)
    :weight (:weight data)})
+
 
 (def excel-map
   {:A :sku
@@ -236,14 +210,32 @@
                    {(first one) (str/trim (second one))}
                    one)) m))))
 
+(defn sub-result [coll]
+  (-> (into [] coll)
+       (subvec 8 15)))
 
 (let [list (-> (utils/read-excel
-                 "g:/upload_template.xlsx"
+                 "g:/upload_template2.xlsx"
                  "upload_template"
                  excel-map)
                rest
                (->> (map remove-map-space)))]
   (-> (map #(convert-data % list) list)
-      (create-magento-product-list "g:/2333.csv")))
+      (sub-result)
+      (create-magento-product-list)
+      (utils/maps->csv-file "g:/2333.csv")))
 
-;; des_image描述图片放在描述的哪个位置？
+
+
+#_(let [list (-> (utils/read-excel
+                   "g:/upload_template2.xlsx"
+                   "upload_template"
+                   excel-map)
+                 rest
+                 (->> (map remove-map-space)))]
+  (-> (map #(convert-data % list) list)
+      (sub-result)
+      (create-magento-product-list)
+      (->> (map #(:url_key %))
+           (group-by identity))))
+
