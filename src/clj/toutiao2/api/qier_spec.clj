@@ -13,7 +13,6 @@
 (s/def ::body (s/keys :req-un [:body/code :body/data]))
 
 
-
 (def source-platform (into #{} (range 1 11)))
 (s/def :article/title (s/and string? #(> (count %) 10) #(< (count %) 30)))
 (s/def :article/content string?)

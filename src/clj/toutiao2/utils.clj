@@ -58,7 +58,7 @@
     (doall
       (csv/read-csv reader))))
 
-(defn csv-data->maps [csv-data]
+(defn list-data->maps [csv-data]
   (map zipmap
        (->> (first csv-data) ;; First row is the header
             (map keyword) ;; Drop if you want string keys instead
@@ -67,7 +67,7 @@
 
 (defn csv-file->maps [file]
   (-> (read-csv file)
-      (csv-data->maps)))
+      (list-data->maps)))
 
 (defn trunc
   [s n]
@@ -88,3 +88,12 @@
   (->> (sheet/load-workbook file)
        (sheet/select-sheet tab)
        (sheet/select-columns cols)))
+
+(defn read-excel->map [file tab]
+  (->> (sheet/load-workbook file)
+       (sheet/select-sheet tab)
+       (sheet/row-seq)
+       (remove nil?)
+       (map sheet/cell-seq)
+       (map #(map sheet/read-cell %))
+       (list-data->maps)))

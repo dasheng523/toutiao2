@@ -1,7 +1,8 @@
 (ns toutiao2.arikami.tools
   (:require [toutiao2.utils :as utils]
             [clj-time.local :as l-t]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.spec.alpha :as s]))
 
 (defn- name->url-key [name sku]
   (-> name
@@ -9,6 +10,13 @@
       (str/lower-case)
       (str/replace #" " "-")))
 
+
+(defn- sub-products [sku list]
+  (filter #(and (str/starts-with? (:sku %) sku) (not= sku (:sku %))) list))
+
+(defn- parent-product [sku list]
+  (-> (filter #(= (:sku %) (-> sku (str/split #"-") first)) list)
+      (first)))
 
 (defn create-magento-product-list [list]
   (let [data (map
@@ -69,7 +77,7 @@
                   :categories                 (:categories info)
                   :product_websites           "base"
                   :special_price_to_date      nil
-                  :weight                     (/ (get info :weight 0) 1000)
+                  :weight                     (get info :weight 0)
                   :max_cart_qty               1000
                   :use_config_qty_increments  1
                   :additional_image_labels    (get info :additional_image_labels nil)
@@ -91,7 +99,11 @@
                   :use_config_notify_stock_qty 1
                   :price (:price info)
                   :new_to_date ""
-                  :visibility (if (= (get info :product_type "simple") "simple") "Search" "Catalog, Search")
+                  :visibility (if (and (= (get info :product_type) "simple")
+                                       (parent-product (:sku info) list)
+                                       (not= (parent-product (:sku info) list) info))
+                                "Not Visible Individually"
+                                "Catalog, Search")
                   :attribute_set_code "Default"
                   :configurable_variation_labels ""
                   :store_view_code ""
@@ -117,7 +129,7 @@
 
 (defn maps->string-format [m]
   (->> m
-       (map #(str (-> % first (str/trim)) "=" (-> % second (str/trim))))
+       (map #(str (-> % first str (str/trim)) "=" (-> % second str (str/trim))))
        (str/join ",")))
 
 (defn convert-addattr [data]
@@ -130,7 +142,7 @@
                         (->> (map #(str "http://www.arikami.com/media/Products/" %)))
                         (->> (map #(str "<img src=\"" % "\">")))
                         (->> (str/join "\n"))))
-        desc (if (> (count (:description_en data)) 0)
+        desc (if (string? (:description_en data))
                (-> (:description_en data)
                    (str/split #"\n")
                    (->> (map #(str "<p>" % "</p>"))
@@ -141,21 +153,87 @@
 (defn convert-configvar [data list]
   (if (= (:product_type data) "configurable")
     (let [sku (:sku data)
-          flist (filter #(and (str/starts-with? (:sku %) sku) (not= sku (:sku %))) list)
-          config-map (map #(merge (get-attrs %) {"sku" (:sku %)}) flist)]
-      (->> config-map
-           (map maps->string-format)
-           (str/join "|")))))
+          f-list (sub-products sku list)
+          config-map (map #(merge (get-attrs %) {"sku" (:sku %)}) f-list)]
+      (when (not-empty config-map)
+        (->> config-map
+             (map maps->string-format)
+             (str/join "|"))))))
+
+(defn convert-additional_images [item list]
+  (let [top-product (parent-product (:sku item) list)]
+    (-> (:image (if (and (= (:product_type item) "simple")
+                         (not-empty top-product))
+                  top-product
+                  item))
+        (str/replace #";" ",")
+        (str/replace #"&" ""))))
+
+
+(defn- attribute-set
+  "导出所有属性值"
+  [list]
+  (reduce
+    (fn [m item]
+      (reduce (fn [v k] (update v k #(conj % (get item k)))) m (keys m)))
+    {:color #{} :material #{} :size #{} :type #{} :capacity #{} :option #{}}
+    list))
+
+
+(defn- remove-map-space [m]
+  (into {}
+        (map (fn [one]
+               (if (string? (second one))
+                 {(first one) (str/trim (second one))}
+                 one)) m)))
+
+(defn sub-result [coll start end]
+  (-> (into [] coll)
+      (subvec start end)))
+
+
+(defn find-all-show-products
+  []
+  (-> (utils/read-excel->map "g:/upload_template3.xlsx" "upload_template")
+      (->> (map remove-map-space)
+           #_(filter #(= "configurable" (:product_type %)))
+           (filter #(or (str/starts-with? (:image %) "ConsumerElectronics")
+                        (str/starts-with? (:image %) "AnimeComicGame")))
+           (group-by #(:sku_no %))
+           (map first))))
+
+
+(s/check-asserts true)
+(s/def :data/name_en string?)
+(s/def :data/price number?)
+(s/def :data/image string?)
+(s/def :data/sku string?)
+(s/def :data/categories string?)
+(s/def :data/product_type (s/and string? #(some #{%} ["configurable" "simple"])))
+(s/def :data/weight number?)
+(s/def ::data
+  (s/keys :req-un
+          [:data/name_en
+           :data/price
+           :data/image
+           :data/sku
+           :data/categories
+           :data/product_type
+           :data/weight]))
+(s/def ::data-list
+  (s/coll-of ::data))
+
 
 (defn convert-data [data list]
-  {:name (if (:name_en data) (:name_en data) (:sku data))
+  {:name (:name_en data)
    :price (:price data)
    :base_image (-> (:image data)
                    (str/split #";")
-                   first)
-   :additional_images (str/replace (:image data) #";" ",")
+                   first
+                   (str/replace #"&" ""))
+   :additional_images (convert-additional_images data list)
    :sku (:sku data)
-   :categories (:categories data)
+   :categories (-> (:categories data) (str/replace #"," "") (str/replace #";" ","))
    :product_type (:product_type data)
    :configurable_variations (convert-configvar data list)
    :meta_title (:meta_title data)
@@ -167,65 +245,28 @@
    :weight (:weight data)})
 
 
-(def excel-map
-  {:A :sku
-   :B :product_type
-   :C :categories
-   :D :name_en
-   :E :name_fr
-   :F :name_es
-   :G :description_en
-   :H :description_fr
-   :I :description_es
-   :J :weight
-   :K :color
-   :L :material
-   :M :size
-   :N :type
-   :O :capacity
-   :P :option
-   :Q :price
-   :R :special_price
-   :S :special_price_from_date
-   :T :special_price_to_date
-   :U :meta_title
-   :V :meta_keywords
-   :W :meta_description
-   :X :image
-   :Y :des_image
-   :Z :swatch_image
-   :AA :new_from_date
-   :AB :new_to_date
-   :AC :qty
-   :AD :related_skus
-   :AE :crosssell_skus
-   :AF :upsell_skus
-   :AG :associated_skus})
 
-(defn- remove-map-space [m]
-  (if (map? m)
-    (into {}
-          (map (fn [one]
-                 (if (string? (second one))
-                   {(first one) (str/trim (second one))}
-                   one)) m))))
+(defn do-write []
+  (let [list (-> (utils/read-excel->map "g:/upload_template3.xlsx" "upload_template")
+                 (->> (map remove-map-space)))]
+    (if (s/valid? ::data-list list)
+      (-> (map #(convert-data % list) list)
+          (->>  (filter #(or (str/starts-with? (:base_image %) "ConsumerElectronics")
+                             (str/starts-with? (:base_image %) "AnimeComicGame"))))
+          #_(sub-result 31 61)
+          (create-magento-product-list)
+          (utils/maps->csv-file "g:/2333.csv"))
+      (-> (s/explain-data ::data-list list)
+          (get :clojure.spec.alpha/problems)))))
 
-(defn sub-result [coll]
-  (-> (into [] coll)
-       (subvec 8 15)))
-
-(let [list (-> (utils/read-excel
-                 "g:/upload_template2.xlsx"
-                 "upload_template"
-                 excel-map)
-               rest
-               (->> (map remove-map-space)))]
-  (-> (map #(convert-data % list) list)
-      (sub-result)
-      (create-magento-product-list)
-      (utils/maps->csv-file "g:/2333.csv")))
+(do-write)
 
 
+
+
+#_(-> (utils/read-excel->map "g:/upload_template3.xlsx" "upload_template")
+    (->> (map remove-map-space))
+    (attribute-set))
 
 #_(let [list (-> (utils/read-excel
                    "g:/upload_template2.xlsx"
@@ -238,4 +279,3 @@
       (create-magento-product-list)
       (->> (map #(:url_key %))
            (group-by identity))))
-
