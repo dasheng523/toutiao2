@@ -2,6 +2,7 @@
   (:require [toutiao2.utils :as utils]
             [clj-time.local :as l-t]
             [clojure.string :as str]
+            [clj-http.client :as http]
             [clojure.spec.alpha :as s]))
 
 (defn- name->url-key [name sku]
@@ -116,14 +117,18 @@
                list)]
     data))
 
+(defn- format-attr [s]
+  (if s
+    (-> (if (number? s) (str (int s)) s)
+        (str/replace #"," " -"))))
 
 (defn get-attrs [data]
-  (-> {"color" (:color data)
-       "material" (:material data)
-       "size" (:size data)
-       "type" (:type data)
-       "capacity" (:capacity data)
-       "option" (:option data)}
+  (-> {"color" (-> (:color data) format-attr)
+       "material" (-> (:material data) format-attr)
+       "size" (-> (:size data) format-attr)
+       "type" (-> (:type data) format-attr)
+       "capacity" (-> (:capacity data) format-attr)
+       "option" (-> (:option data) format-attr)}
       (->> (filter second)
            (into {}))))
 
@@ -175,7 +180,10 @@
   [list]
   (reduce
     (fn [m item]
-      (reduce (fn [v k] (update v k #(conj % (get item k)))) m (keys m)))
+      (reduce (fn [v k]
+                (update v k #(conj % (-> (get item k) format-attr))))
+              m
+              (keys m)))
     {:color #{} :material #{} :size #{} :type #{} :capacity #{} :option #{}}
     list))
 
@@ -187,7 +195,7 @@
                  {(first one) (str/trim (second one))}
                  one)) m)))
 
-(defn sub-result [coll start end]
+(defn sub-coll [coll start end]
   (-> (into [] coll)
       (subvec start end)))
 
@@ -245,15 +253,50 @@
    :weight (:weight data)})
 
 
+(defn verify-images [data]
+  (let [urls (->> (mapcat (fn [info]
+                           (-> (str (:image info) ";" (:des_image info))
+                               (str/split #";")
+                               (->> (map #(str "http://www.arikami.com/media/Products/" (str/trim %))))))
+                         data)
+                 (into #{}))]
+    (future (doseq [url (sub-coll urls 1 500)]
+              (try
+                (if (not= (:status (http/head url)) 200)
+                  (println url))
+                (catch Exception e
+                  (println url)))))
+    (future (doseq [url (sub-coll urls 500 1000)]
+              (try
+                (if (not= (:status (http/head url)) 200)
+                  (println url))
+                (catch Exception e
+                  (println url)))))
+    (future (doseq [url (sub-coll urls 1000 1500)]
+              (try
+                (if (not= (:status (http/head url)) 200)
+                  (println url))
+                (catch Exception e
+                  (println url)))))
+    (future (doseq [url (sub-coll urls 1500 1780)]
+              (try
+                (if (not= (:status (http/head url)) 200)
+                  (println url))
+                (catch Exception e
+                  (println url)))))))
+
+
+(-> (utils/read-excel->map "g:/upload_template-1228-v2.xlsx" "upload_template")
+    (->> (map remove-map-space))
+    (verify-images))
 
 (defn do-write []
-  (let [list (-> (utils/read-excel->map "g:/upload_template3.xlsx" "upload_template")
+  (let [list (-> (utils/read-excel->map "g:/upload_template-1228-v2.xlsx" "upload_template")
                  (->> (map remove-map-space)))]
     (if (s/valid? ::data-list list)
       (-> (map #(convert-data % list) list)
           (->>  (filter #(or (str/starts-with? (:base_image %) "ConsumerElectronics")
                              (str/starts-with? (:base_image %) "AnimeComicGame"))))
-          #_(sub-result 31 61)
           (create-magento-product-list)
           (utils/maps->csv-file "g:/2333.csv"))
       (-> (s/explain-data ::data-list list)
@@ -264,7 +307,7 @@
 
 
 
-#_(-> (utils/read-excel->map "g:/upload_template3.xlsx" "upload_template")
+(-> (utils/read-excel->map "g:/upload_template-1228-v2.xlsx" "upload_template")
     (->> (map remove-map-space))
     (attribute-set))
 
