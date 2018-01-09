@@ -235,6 +235,7 @@
 (defn convert-data [data list]
   {:name (:name_en data)
    :price (:price data)
+   :special_price (:special_price data)
    :base_image (-> (:image data)
                    (str/split #";")
                    first
@@ -286,7 +287,7 @@
                   (println url)))))))
 
 
-(-> (utils/read-excel->map "g:/upload_template-1228-v2.xlsx" "upload_template")
+#_(-> (utils/read-excel->map "g:/upload_template-1228-v2.xlsx" "upload_template")
     (->> (map remove-map-space))
     (verify-images))
 
