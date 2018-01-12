@@ -235,6 +235,7 @@
 (defn convert-data [data list]
   {:name (:name_en data)
    :price (:price data)
+   :special_price (:special_price data)
    :base_image (-> (:image data)
                    (str/split #";")
                    first
