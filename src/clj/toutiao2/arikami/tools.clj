@@ -78,7 +78,7 @@
                   :categories                 (:categories info)
                   :product_websites           "base"
                   :special_price_to_date      nil
-                  :weight                     (get info :weight 0)
+                  :weight                     (* (get info :weight 0) 1000)
                   :max_cart_qty               1000
                   :use_config_qty_increments  1
                   :additional_image_labels    (get info :additional_image_labels nil)
@@ -260,7 +260,8 @@
                                (str/split #";")
                                (->> (map #(str "http://www.arikami.com/media/Products/" (str/trim %))))))
                          data)
-                 (into #{}))]
+                  (into #{}))]
+    (println (count urls))
     (future (doseq [url (sub-coll urls 1 500)]
               (try
                 (if (not= (:status (http/head url)) 200)
@@ -279,7 +280,7 @@
                   (println url))
                 (catch Exception e
                   (println url)))))
-    (future (doseq [url (sub-coll urls 1500 1780)]
+    (future (doseq [url (sub-coll urls 1500 1776)]
               (try
                 (if (not= (:status (http/head url)) 200)
                   (println url))
@@ -287,24 +288,29 @@
                   (println url)))))))
 
 
-#_(-> (utils/read-excel->map "g:/upload_template-1228-v2.xlsx" "upload_template")
+(-> (utils/read-excel->map "/Users/huangyesheng/Documents/upload_template-1228-v3.xls" "upload_template")
     (->> (map remove-map-space))
     (verify-images))
 
 (defn do-write []
-  (let [list (-> (utils/read-excel->map "g:/upload_template-1228-v2.xlsx" "upload_template")
+  (let [list (-> (utils/read-excel->map "/Users/huangyesheng/Documents/upload_template-1228-v3.xls" "upload_template")
                  (->> (map remove-map-space)))]
     (if (s/valid? ::data-list list)
       (-> (map #(convert-data % list) list)
-          (->>  (filter #(or (str/starts-with? (:base_image %) "ConsumerElectronics")
+          #_(->>  (filter #(or (str/starts-with? (:base_image %) "ConsumerElectronics")
                              (str/starts-with? (:base_image %) "AnimeComicGame"))))
           (create-magento-product-list)
-          (utils/maps->csv-file "g:/2333.csv"))
+          (utils/maps->csv-file "/Users/huangyesheng/Documents/2333.csv"))
       (-> (s/explain-data ::data-list list)
           (get :clojure.spec.alpha/problems)))))
 
 (do-write)
 
+
+
+(-> (utils/read-excel->map "/Users/huangyesheng/Documents/upload_template-1228-v3.xls" "upload_template")
+    (->> (map remove-map-space))
+    (count))
 
 
 

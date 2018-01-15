@@ -51,6 +51,7 @@
                  [dk.ative/docjure "1.11.0"]                ; Excel
                  [org.clojure/data.csv "0.1.4"]             ; CSV
                  [prismatic/schema "1.1.7"]                 ; 验证库
+                 [clj-bosonnlp "0.1.2"]                     ; 自然语言库
                  #_[opencv/opencv "3.3.1"]
                  #_[opencv/opencv-native "3.3.1"]]
 
