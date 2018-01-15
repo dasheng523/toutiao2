@@ -3,7 +3,8 @@
             [clj-time.local :as l-t]
             [clojure.string :as str]
             [clj-http.client :as http]
-            [clojure.spec.alpha :as s]))
+            [clojure.spec.alpha :as s]
+            [clojure.walk :as walk]))
 
 (defn- name->url-key [name sku]
   (-> name
@@ -19,13 +20,60 @@
   (-> (filter #(= (:sku %) (-> sku (str/split #"-") first)) list)
       (first)))
 
+(def import-field
+  [:use_config_max_sale_qty :description :thumbnail_image :bundle_sku_type :custom_design_from
+   :manage_stock :custom_design_to :small_image_label :use_config_enable_qty_inc :associated_skus
+   :map_enabled :swatch_image :bundle_shipment_type :enable_qty_increments :new_from_date
+   :crosssell_skus :special_price :configurable_variations :website_id :meta_title :name
+   :use_config_min_qty :gift_message_available :min_cart_qty :related_skus :country_of_manufacture
+   :use_config_backorders :bundle_price_type :custom_design :product_online :qty_increments
+   :swatch_image_label :notify_on_stock_below :display_product_options_in :upsell_position
+   :meta_keywords :short_description :msrp_price :product_options_container :use_config_manage_stock
+   :product_type :hide_from_product_page :sku :related_position :updated_at :base_image
+   :additional_images :tax_class_name :is_qty_decimal :out_of_stock_qty :bundle_weight_type
+   :categories :product_websites :special_price_to_date :weight :max_cart_qty :use_config_qty_increments
+   :additional_image_labels :meta_description :map_price :crosssell_position :qty
+   :additional_attributes :is_decimal_divided :url_key :custom_layout_update :bundle_price_view
+   :thumbnail_image_label :special_price_from_date :allow_backorders :use_config_min_sale_qty
+   :small_image :is_in_stock :use_config_notify_stock_qty :price :new_to_date :visibility
+   :attribute_set_code :configurable_variation_labels :store_view_code :msrp_display_actual_price_type
+   :custom_options :upsell_skus :created_at :base_image_label :page_layout])
+
+(def empty-product-info (reduce #(assoc %1 %2 "") {} import-field))
+
+(def default-product-info
+  {:use_config_max_sale_qty 1
+   :manage_stock 1
+   :use_config_enable_qty_inc  0
+   :enable_qty_increments      0
+   :website_id                 0
+   :use_config_min_qty         1
+   :min_cart_qty               1.0000
+   :use_config_backorders      1
+   :product_online             1
+   :qty_increments             0.0000
+   :notify_on_stock_below      1
+   :display_product_options_in "Block after Info Column"
+   :use_config_manage_stock    1
+   :tax_class_name             "Taxable Goods"
+   :is_qty_decimal             0
+   :out_of_stock_qty           0.0000
+   :product_websites           "base"
+   :max_cart_qty               1000
+   :use_config_qty_increments  1
+   :qty 1000
+   :is_decimal_divided 0
+   :use_config_min_sale_qty 1
+   :is_in_stock 1
+   :use_config_notify_stock_qty 1})
+
 (defn create-magento-product-list [list]
   (let [data (map
                (fn [info]
                  {:use_config_max_sale_qty    1
-                  :description                (:description info)
+                  :description                (get info :description "")
                   :bundle_values              ""
-                  :thumbnail_image            (:base_image info)
+                  :thumbnail_image            (get info :base_image "")
                   :bundle_sku_type            ""
                   :custom_design_from         ""
                   :manage_stock               1
@@ -39,7 +87,7 @@
                   :enable_qty_increments      0
                   :new_from_date              ""
                   :crosssell_skus             ""
-                  :special_price              (:special_price info)
+                  :special_price              (get info :special_price "")
                   :configurable_variations    (get info :configurable_variations "")
                   :website_id                 0
                   :meta_title                 (get info :meta_title "")
@@ -85,19 +133,19 @@
                   :meta_description (get info :meta_description)
                   :map_price ""
                   :crosssell_position ""
-                  :qty 1000
                   :additional_attributes (get info :additional_attributes)
+                  :qty 1000
                   :is_decimal_divided 0
+                  :use_config_min_sale_qty 1
+                  :is_in_stock 1
+                  :use_config_notify_stock_qty 1
                   :url_key (name->url-key (get info :name "") (get info :sku ""))
                   :custom_layout_update ""
                   :bundle_price_view ""
                   :thumbnail_image_label ""
                   :special_price_from_date ""
                   :allow_backorders 0
-                  :use_config_min_sale_qty 1
                   :small_image (:base_image info)
-                  :is_in_stock 1
-                  :use_config_notify_stock_qty 1
                   :price (:price info)
                   :new_to_date ""
                   :visibility (if (and (= (get info :product_type) "simple")
@@ -107,7 +155,7 @@
                                 "Catalog, Search")
                   :attribute_set_code "Default"
                   :configurable_variation_labels ""
-                  :store_view_code ""
+                  :store_view_code (get info :store_view_code "")
                   :msrp_display_actual_price_type ""
                   :custom_options ""
                   :upsell_skus ""
@@ -116,6 +164,7 @@
                   :page_layout ""})
                list)]
     data))
+
 
 (defn- format-attr [s]
   (if s
@@ -307,14 +356,56 @@
 (do-write)
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;; Fr ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn find-sku [sku english-data]
+  (-> english-data
+      (->> (filter #(= sku (:sku %))))
+      (first)))
 
-(-> (utils/read-excel->map "/Users/huangyesheng/Documents/upload_template-1228-v3.xls" "upload_template")
+(def english-data (utils/csv-file->maps "g:/catalog_product_20180115_015420.csv"))
+
+(defn- generate-fr-description [data]
+  (let [resource-info (find-sku (:sku data) english-data)]
+    (when resource-info
+      (if (= "" (-> (:description_fr data) str str/trim))
+        ""
+        (-> resource-info
+            :description
+            (str/split #"<p>" 2)
+            first
+            (str "\n" (:description_fr data)))))))
+
+
+(defn fr-data [data]
+  (merge empty-product-info
+         {:name (:name_fr data)
+          :sku (:sku data)
+          :store_view_code "french"
+          :attribute_set_code "default"
+          :product_type "configurable"
+          :description (generate-fr-description data)
+          :url_key (name->url-key (get data :name_fr "") (get data :sku ""))}))
+
+
+(defn map-val-trim [m]
+  (reduce #(update %1 (first %2) (comp str/trim str)) m m))
+
+(defn do-fr []
+  (-> (utils/read-excel->map "g:/FR.xlsx" "upload_template")
+      (->> (filter #(and (not= (:sku %) "")
+                         (not (str/includes? (:sku %) "-")))))
+      (->> (map (comp fr-data map-val-trim)))
+      (utils/maps->csv-file "g:/fr.csv")))
+
+(do-fr)
+
+
+#_(-> (utils/read-excel->map "/Users/huangyesheng/Documents/upload_template-1228-v3.xls" "upload_template")
     (->> (map remove-map-space))
     (count))
 
 
-
-(-> (utils/read-excel->map "g:/upload_template-1228-v2.xlsx" "upload_template")
+#_(-> (utils/read-excel->map "g:/upload_template-1228-v2.xlsx" "upload_template")
     (->> (map remove-map-space))
     (attribute-set))
 

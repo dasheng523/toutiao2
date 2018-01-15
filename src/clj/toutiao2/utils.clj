@@ -4,7 +4,9 @@
             [dk.ative.docjure.spreadsheet :as sheet]
             [clojure.data.csv :as csv]
             [clojure.java.io :as io]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [net.cgrand.enlive-html :as enlive])
+  (:import (java.io StringReader)))
 
 
 (s/def :http-response/status (s/and int? #(= 200 %)))
@@ -80,10 +82,6 @@
       (cons (map #(name %) (keys (first data)))
             (map #(vals %) data)))))
 
-#_(-> (csv-file->maps "g:/catalog_product_20171211_032234.csv")
-    (->> (map #(update-in % [:description] trunc 500)))
-    (rand-nth))
-
 (defn read-excel [file tab cols]
   (->> (sheet/load-workbook file)
        (sheet/select-sheet tab)
@@ -97,3 +95,16 @@
        (map sheet/cell-seq)
        (map #(map sheet/read-cell %))
        (list-data->maps)))
+
+(defn to-enlive [html]
+  (-> html
+      (StringReader.)
+      (enlive/html-resource)))
+
+
+(defn get-html-text [html selector]
+  (-> (to-enlive html)
+      (enlive/select selector)
+      (enlive/texts)
+      (first)))
+

@@ -5,4 +5,6 @@
 
 (bos/depparser "植物的香味")
 
-(bos/suggest "粉丝")
+(bos/depparser "邓紫棋谈男友林宥嘉：我觉得我比他唱得好")
+
+(bos/suggest "2个")

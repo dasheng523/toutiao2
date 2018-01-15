@@ -5,7 +5,8 @@
             [clojure.java.io :as io]
             [clojure.tools.logging :as log]
             [clj-bosonnlp.core :as bos]
-            [net.cgrand.enlive-html :as enlive])
+            [net.cgrand.enlive-html :as enlive]
+            [toutiao2.tuding.search-engine :as search-engine])
   (:import (java.io StringReader)))
 
 (def number-map
@@ -42,46 +43,6 @@
             ks)))
 
 
-(defn to-enlive [html]
-  (-> html
-      (StringReader.)
-      (enlive/html-resource)))
-
-(defn get-html-text [html selector]
-  (-> (to-enlive html)
-      (enlive/select selector)
-      (enlive/texts)
-      (first)))
-
-(defn- google-search [question]
-  (-> (str "https://www.google.co.jp/search?q=" question)
-      (http/get {:headers {"Accept-Encoding" "gzip, deflate"
-                           "Accept-Language" "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2"
-                           "content-type" "text/html; charset=utf-8"}
-                 :as "gbk"})
-      :body
-      (get-html-text [:body])))
-
-
-(defn- baidu-search [question]
-  (-> (str "https://www.baidu.com/s?wd=" question)
-      (http/get {:headers {"Accept-Encoding" "gzip, deflate"
-                           "Accept-Language" "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2"
-                           "content-type" "text/html; charset=utf-8"
-                           "User-Agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"}})
-      :body
-      (get-html-text [:body])))
-
-(defn- biying-search [question]
-  (-> (str "https://cn.bing.com/search?q=" question)
-      (http/get {:headers {"Accept-Encoding" "gzip, deflate"
-                           "Accept-Language" "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2"
-                           "content-type" "text/html; charset=utf-8"
-                           "User-Agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"}})
-      :body
-      (get-html-text [:body])))
-
-
 (defn find-question [question options search-method]
   (-> (search-method question)
       (account-keyword options)))
@@ -96,39 +57,21 @@
    "X-Live-Device-Type" "android"
    "Accept-Encoding" "gzip"})
 
-(def default-proxy-config
-  {:proxy-host "127.0.0.1"
-   :proxy-port 50461
-   :socket-timeout 3000 :conn-timeout 3000})
+(def default-http-config
+  {:socket-timeout 3000
+   :conn-timeout 3000})
 
 (def default-params
   (merge {:headers default-headers}
-         default-proxy-config))
+         default-http-config))
 
 (defn- merge-token [params token]
   (update-in params
              [:headers]
              assoc "X-Live-Session-Token" token))
 
-
 (defn- merge-body [params body]
   (assoc params :body body))
-
-(defn- create-query [method headers]
-  (fn [url params]
-    (method url
-            (merge params
-                   {:headers headers
-                    :proxy-host "127.0.0.1"
-                    :proxy-port 50461}))))
-
-
-(defn- do-answer [token question-id option-index]
-  (http/post (str domain "/answer/do")
-             (-> default-params
-                 (merge-token token)
-                 (merge-body (json/generate-string
-                              {:questionId question-id :option option-index})))))
 
 (defn- parse-question-info [text]
   (let [data (json/parse-string text true)]
@@ -146,6 +89,7 @@
                 (-> default-params
                     (merge-token token)))
       :body))
+
 
 (defn- get-test-question [file]
   (-> file
@@ -167,24 +111,24 @@
 
           (future (println "google:"
                            (compute-percent
-                            (find-question question options google-search))))
+                            (find-question question options search-engine/google-search))))
           (future (println "biying"
                            (compute-percent
-                            (find-question question options biying-search))))
+                            (find-question question options search-engine/biying-search))))
           (future (println "baidu"
                            (compute-percent
-                            (find-question question options baidu-search))))
+                            (find-question question options search-engine/baidu-search))))
 
           (when (some #(re-find #"\d" %) options)
             (future (println (compute-percent (find-question question
                                                              (map number-synonym options)
-                                                             google-search))))
+                                                             search-engine/google-search))))
             (future (println (compute-percent (find-question question
                                                              (map number-synonym options)
-                                                             biying-search))))
+                                                             search-engine/biying-search))))
             (future (println (compute-percent (find-question question
                                                              (map number-synonym options)
-                                                             baidu-search))))
+                                                             search-engine/baidu-search))))
             ))))
     (catch Exception e
       (log/error (.getMessage e)))))
