@@ -4,7 +4,6 @@
             [cheshire.core :as json]
             [clojure.java.io :as io]
             [clojure.tools.logging :as log]
-            [clj-bosonnlp.core :as bos]
             [net.cgrand.enlive-html :as enlive]
             [toutiao2.tuding.search-engine :as search-engine])
   (:import (java.io StringReader)))
@@ -86,8 +85,7 @@
 
 (defn- get-question [token]
   (-> (http/get (str domain "/msg/current")
-                (-> default-params
-                    (merge-token token)))
+                (-> default-params (merge-token token)))
       :body))
 
 
@@ -96,20 +94,19 @@
       slurp))
 
 
-
 (defn- do-logic []
   (try
     (println "============ starting =========")
     (let [content
-          (get-test-question "/Users/huangyesheng/Downloads/16.txt")
-          #_(get-question "1.16135003.1082161.kas.6611d5742e6111dfe51bf114f6b38343")]
+          #_(get-test-question "d:/16.txt")
+          (get-question "1.16135003.1082161.kas.6611d5742e6111dfe51bf114f6b38343")]
       (println (str "content: " content))
       (let [{:keys [question options] :as question-info}
             (parse-question-info content)]
         (when question
           (println question)
 
-          (future (println "google:"
+          #_(future (println "google:"
                            (compute-percent
                             (find-question question options search-engine/google-search))))
           (future (println "biying"
@@ -118,9 +115,12 @@
           (future (println "baidu"
                            (compute-percent
                             (find-question question options search-engine/baidu-search))))
+          (future (println "soso"
+                           (compute-percent
+                             (find-question question options search-engine/so-search))))
 
           (when (some #(re-find #"\d" %) options)
-            (future (println (compute-percent (find-question question
+            #_(future (println (compute-percent (find-question question
                                                              (map number-synonym options)
                                                              search-engine/google-search))))
             (future (println (compute-percent (find-question question
@@ -128,20 +128,11 @@
                                                              search-engine/biying-search))))
             (future (println (compute-percent (find-question question
                                                              (map number-synonym options)
-                                                             search-engine/baidu-search))))
-            ))))
+                                                             search-engine/baidu-search))))))))
     (catch Exception e
       (log/error (.getMessage e)))))
 
 (do-logic)
-
-
-
-
-(bos/initialize "wcY5KVg5.21955.F8s57q6YTp36")
-
-(bos/depparser "邓紫棋谈男友林宥嘉：我觉得我比他唱得好")
-
 
 
 
@@ -163,16 +154,6 @@
     (merge-body (json/generate-string {"text" "aaaaaaaaa"
                                        "type" "1"
                                        "liveId" "18363"})))
-
-#_(-> (str domain "/msg/current")
-    (query-get {})
-    :body
-    (parse-question-info))
-
-#_(-> "/Users/huangyesheng/Downloads/11.txt"
-    slurp
-    (parse-question-info))
-
 
 
 
