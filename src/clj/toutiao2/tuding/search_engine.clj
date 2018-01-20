@@ -31,7 +31,11 @@
         :body
         (get-html-text content-selector))))
 
-(def google-search (create-search-engine google-base-url (assoc search-request :as "gbk") [:div.big :div.mw]))
+(def google-search (create-search-engine google-base-url
+                                         (assoc search-request
+                                                :proxy-host "127.0.0.1"
+                                                :proxy-port 50461)
+                                         [:div#rcnt]))
 (def baidu-search (create-search-engine baidu-base-url search-request [:div#content_left :div.result]))
 (def biying-search (create-search-engine biying-base-url search-request [:div#b_content]))
 (def so-search (create-search-engine so-base-url search-request [:div#main]))

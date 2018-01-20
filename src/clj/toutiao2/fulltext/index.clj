@@ -4,7 +4,16 @@
            (com.hankcs.hanlp.suggest Suggester)
            (com.hankcs.hanlp.dictionary CoreSynonymDictionary)))
 
-(HanLP/extractKeyword "程序员(英文Programmer)是从事程序开发、维护的专业人员。一般将程序员分为程序设计人员和程序编码人员，但两者的界限并不非常清楚，特别是在中国。软件从业人员分为初级程序员、高级程序员、系统分析员和项目经理四大类。" 15)
+(-> (HanLP/extractKeyword "程序员(英文Programmer)是从事程序开发、维护的专业人员。一般将程序员分为程序设计人员和程序编码人员，但两者的界限并不非常清楚，特别是在中国。软件从业人员分为初级程序员、高级程序员、系统分析员和项目经理四大类。" 100)
+    count)
+
+
+
+(-> (search/google-search "全球首款人工智能手机芯片是?")
+    (HanLP/extractKeyword 100))
+
+
+
 
 (HanLP/extractKeyword "签约仪式前，秦光荣、李纪恒、仇和等一同会见了参加签约的企业家" 5)
 

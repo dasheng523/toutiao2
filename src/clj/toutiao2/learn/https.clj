@@ -4,7 +4,6 @@
             [cheshire.core :as json]
             [clojure.java.io :as io]
             [clojure.tools.logging :as log]
-            [clj-bosonnlp.core :as bos]
             [net.cgrand.enlive-html :as enlive]
             [toutiao2.tuding.search-engine :as search-engine])
   (:import (java.io StringReader)))
@@ -101,46 +100,66 @@
   (try
     (println "============ starting =========")
     (let [content
-          (get-test-question "/Users/huangyesheng/Downloads/16.txt")
-          #_(get-question "1.16135003.1082161.kas.6611d5742e6111dfe51bf114f6b38343")]
+          #_(get-test-question "/Users/huangyesheng/Downloads/16.txt")
+          (get-question "1.16135003.1082161.kas.6611d5742e6111dfe51bf114f6b38343")]
       (println (str "content: " content))
       (let [{:keys [question options] :as question-info}
-            (parse-question-info content)]
+            (parse-question-info content)
+            rs-fun (partial (comp compute-percent find-question)
+                            question options)]
         (when question
           (println question)
+          (println options)
 
           (future (println "google:"
-                           (compute-percent
-                            (find-question question options search-engine/google-search))))
+                           (rs-fun search-engine/google-search)))
           (future (println "biying"
-                           (compute-percent
-                            (find-question question options search-engine/biying-search))))
+                           (rs-fun search-engine/biying-search)))
           (future (println "baidu"
-                           (compute-percent
-                            (find-question question options search-engine/baidu-search))))
+                           (rs-fun search-engine/baidu-search)))
 
           (when (some #(re-find #"\d" %) options)
-            (future (println (compute-percent (find-question question
-                                                             (map number-synonym options)
-                                                             search-engine/google-search))))
-            (future (println (compute-percent (find-question question
-                                                             (map number-synonym options)
-                                                             search-engine/biying-search))))
-            (future (println (compute-percent (find-question question
-                                                             (map number-synonym options)
-                                                             search-engine/baidu-search))))
-            ))))
+            (let [rs-fun2 (partial (comp compute-percent find-question)
+                                   (map number-synonym options))]
+              (future (println (compute-percent
+                                (rs-fun2
+                                 search-engine/google-search))))
+              (future (println (compute-percent
+                                (rs-fun2
+                                 search-engine/baidu-search))))
+              (future (println (compute-percent
+                                (rs-fun2
+                                 search-engine/biying-search)))))))))
     (catch Exception e
       (log/error (.getMessage e)))))
+
+
 
 (do-logic)
 
 
 
 
-(bos/initialize "wcY5KVg5.21955.F8s57q6YTp36")
 
-(bos/depparser "邓紫棋谈男友林宥嘉：我觉得我比他唱得好")
+
+
+
+
+
+
+
+
+
+
+
+
+
+(Def ss "/cdn/h/1/comment/brow/13241410?iid=23704761247&device_id=21101274775&ac=wifi&channel=xiaomi&aid=1248&app_name=fantasy&version_code=601&version_name=6.0.1&device_platform=android&ssmix=a&device_type=MI+5&device_brand=Xiaomi&language=zh&os_api=24&os_version=7.0&openudid=4112f307c9f2f01c&manifest_version_code=101&resolution=1080*1920&dpi=480&update_version_code=6010&_rticket=1516285394581")
+
+  (Def ss2 "/cdn/h/1/comment/brow/13241411?iid=23704761247&device_id=21101274775&ac=wifi&channel=xiaomi&aid=1248&app_name=fantasy&version_code=601&version_name=6.0.1&device_platform=android&ssmix=a&device_type=MI+5&device_brand=Xiaomi&language=zh&os_api=24&os_version=7.0&openudid=4112f307c9f2f01c&manifest_version_code=101&resolution=1080*1920&dpi=480&update_version_code=6010&_rticket=1516286787009")
+
+(def ss-url (str "http://api-spe-ttl.ixigua.com" ss2))
+(println (http/get ss-url {:as "utf-8"}))
 
 
 
