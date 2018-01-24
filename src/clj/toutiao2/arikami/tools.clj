@@ -6,20 +6,6 @@
             [clojure.spec.alpha :as s]
             [clojure.walk :as walk]))
 
-(defn- name->url-key [name sku]
-  (-> name
-      (str "-" sku)
-      (str/lower-case)
-      (str/replace #" " "-")))
-
-
-(defn- sub-products [sku list]
-  (filter #(and (str/starts-with? (:sku %) sku) (not= sku (:sku %))) list))
-
-(defn- parent-product [sku list]
-  (-> (filter #(= (:sku %) (-> sku (str/split #"-") first)) list)
-      (first)))
-
 (def import-field
   [:use_config_max_sale_qty :description :thumbnail_image :bundle_sku_type :custom_design_from
    :manage_stock :custom_design_to :small_image_label :use_config_enable_qty_inc :associated_skus
@@ -65,9 +51,15 @@
    :is_decimal_divided 0
    :use_config_min_sale_qty 1
    :is_in_stock 1
-   :use_config_notify_stock_qty 1})
+   :use_config_notify_stock_qty 1
+   :updated_at                 (l-t/local-now)
+   :created_at (l-t/local-now)
+   :product_type "simple"
+   :weight 0})
 
-(defn create-magento-product-list [list]
+
+
+#_(defn create-magento-product-list [list]
   (let [data (map
                (fn [info]
                  {:use_config_max_sale_qty    1
@@ -166,6 +158,21 @@
     data))
 
 
+
+(defn- name->url-key [name sku]
+  (-> name
+      (str "-" sku)
+      (str/lower-case)
+      (str/replace #" " "-")))
+
+(defn- sub-products [sku list]
+  (filter #(and (str/starts-with? (:sku %) sku) (not= sku (:sku %))) list))
+
+(defn- parent-product [sku list]
+  (-> (filter #(= (:sku %) (-> sku (str/split #"-") first)) list)
+      (first)))
+
+
 (defn- format-attr [s]
   (if s
     (-> (if (number? s) (str (int s)) s)
@@ -244,20 +251,6 @@
                  {(first one) (str/trim (second one))}
                  one)) m)))
 
-(defn sub-coll [coll start end]
-  (-> (into [] coll)
-      (subvec start end)))
-
-
-(defn find-all-show-products
-  []
-  (-> (utils/read-excel->map "g:/upload_template3.xlsx" "upload_template")
-      (->> (map remove-map-space)
-           #_(filter #(= "configurable" (:product_type %)))
-           (filter #(or (str/starts-with? (:image %) "ConsumerElectronics")
-                        (str/starts-with? (:image %) "AnimeComicGame")))
-           (group-by #(:sku_no %))
-           (map first))))
 
 
 (s/check-asserts true)
@@ -282,33 +275,70 @@
 
 
 (defn convert-data [data list]
-  {:name (:name_en data)
-   :price (:price data)
-   :special_price (:special_price data)
-   :base_image (-> (:image data)
-                   (str/split #";")
-                   first
-                   (str/replace #"&" ""))
-   :additional_images (convert-additional_images data list)
-   :sku (:sku data)
-   :categories (-> (:categories data) (str/replace #"," "") (str/replace #";" ","))
-   :product_type (:product_type data)
-   :configurable_variations (convert-configvar data list)
-   :meta_title (:meta_title data)
-   :meta_keywords (:meta_keywords data)
-   :meta_description (:meta_description data)
-   :short_description (if (:description_en data) (utils/trunc (:description_en data) 500))
-   :description (generate-description data)
-   :additional_attributes (convert-addattr data)
-   :weight (:weight data)})
+  (let [image (-> (:image data)
+                  (str/split #";")
+                  first
+                  (str/replace #"&" ""))]
+    {:name (:name_en data)
+     :price (:price data)
+     :special_price (:special_price data)
+     :base_image image
+     :thumbnail_image image
+     :small_image image
+     :additional_images (convert-additional_images data list)
+     :sku (:sku data)
+     :categories (-> (:categories data) (str/replace #"," "") (str/replace #";" ","))
+     :product_type (:product_type data)
+     :configurable_variations (convert-configvar data list)
+     :meta_title (:meta_title data)
+     :meta_keywords (-> (name->url-key (get data :name_en "") (get data :sku ""))
+                        (str/replace #"-" ","))
+     :meta_description (:meta_description data)
+     :short_description (if (:description_en data) (utils/trunc (:description_en data) 500))
+     :description (generate-description data)
+     :additional_attributes (convert-addattr data)
+     :weight (:weight data)
+     :visibility (if (and (= (get data :product_type) "simple")
+                          (parent-product (:sku data) list)
+                          (not= (parent-product (:sku data) list) data))
+                   "Not Visible Individually"
+                   "Catalog, Search")
+     :url_key (name->url-key (get data :name_en "") (get data :sku ""))}))
 
 
-(defn verify-images [data]
-  (let [urls (->> (mapcat (fn [info]
-                           (-> (str (:image info) ";" (:des_image info))
-                               (str/split #";")
-                               (->> (map #(str "http://www.arikami.com/media/Products/" (str/trim %))))))
-                         data)
+(defn create-magento-product-list [data]
+  (merge empty-product-info default-product-info data))
+
+
+
+(defn do-write []
+  (let [list (-> (utils/read-excel->map "/Users/huangyesheng/Documents/upload_template-1228-v3.xls" "upload_template")
+                 (->> (map remove-map-space)))]
+    (if (s/valid? ::data-list list)
+      (-> (map #(-> (convert-data % list) create-magento-product-list) list)
+          (create-magento-product-list)
+          (utils/maps->csv-file "/Users/huangyesheng/Documents/2333.csv"))
+      (-> (s/explain-data ::data-list list)
+          (get :clojure.spec.alpha/problems)))))
+
+(do-write)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;; verify-images ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn sub-coll [coll start end]
+  (-> (into [] coll)
+      (subvec start end)))
+
+(defn verify-images
+  "验证图片有效性"
+  []
+  (let [data (-> (utils/read-excel->map "/Users/huangyesheng/Documents/upload_template-1228-v3.xls" "upload_template")
+                 (->> (map remove-map-space)))
+        urls (->> (mapcat (fn [info]
+                            (-> (str (:image info) ";" (:des_image info))
+                                (str/split #";")
+                                (->> (map #(str "http://www.arikami.com/media/Products/" (str/trim %))))))
+                          data)
                   (into #{}))]
     (println (count urls))
     (future (doseq [url (sub-coll urls 1 500)]
@@ -336,25 +366,7 @@
                 (catch Exception e
                   (println url)))))))
 
-
-(-> (utils/read-excel->map "/Users/huangyesheng/Documents/upload_template-1228-v3.xls" "upload_template")
-    (->> (map remove-map-space))
-    (verify-images))
-
-(defn do-write []
-  (let [list (-> (utils/read-excel->map "/Users/huangyesheng/Documents/upload_template-1228-v3.xls" "upload_template")
-                 (->> (map remove-map-space)))]
-    (if (s/valid? ::data-list list)
-      (-> (map #(convert-data % list) list)
-          #_(->>  (filter #(or (str/starts-with? (:base_image %) "ConsumerElectronics")
-                             (str/starts-with? (:base_image %) "AnimeComicGame"))))
-          (create-magento-product-list)
-          (utils/maps->csv-file "/Users/huangyesheng/Documents/2333.csv"))
-      (-> (s/explain-data ::data-list list)
-          (get :clojure.spec.alpha/problems)))))
-
-(do-write)
-
+(verify-images)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; Fr ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn find-sku [sku english-data]
@@ -402,94 +414,71 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; 修改属性 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def source-data (utils/csv-file->maps "g:/catalog_product_20180118_022755.csv"))
-
-
-(defn find-single-key
-  "找出val一样的Key"
-  [list]
-  (keys (filter #(< (count (second %)) 2)
-                (apply merge-with
-                       into
-                       (map (partial walk/walk
-                                     (fn [[k v]] {k #{v}}) identity)
-                            list)))))
-
-(defn- like-sku [sku list]
-  (filter #(and (str/starts-with? (:sku %) sku)) list))
+(def source-data (utils/csv-file->maps "g:/catalog_product_20180123_074249.csv"))
 
 (defn- str->map [s item-sp val-sp]
-  (reduce #(let [info (str/split %2 val-sp)]
-             (assoc %1 (first info) (second info)))
-          {}
-          (str/split s item-sp)))
+  (if (empty? s)
+    {}
+    (reduce #(let [info (str/split %2 val-sp)]
+               (assoc %1 (first info) (second info)))
+            {}
+            (str/split s item-sp))))
 
 
+(def group-data (group-by #(-> % :sku (str/split #"-") first) source-data))
 
-(defn remove-attrs []
-  (for [item source-data]
-    (let [attr (get item :additional_attributes)
-          sku (get item :sku)
-          parent (parent-product sku source-data)]
-      (if (and parent (not (empty? attr)))
-        (let [remove-keys (-> (get (parent-product sku source-data) :sku)
-                             (like-sku source-data)
-                             (->> (filter #(not (empty? (get % :additional_attributes)))))
-                             (->> (map #(-> (get % :additional_attributes)
-                                            (str->map #"," #"="))))
-                             (find-single-key))
-              attr-map (str->map attr #"," #"=")
-              ddd (apply dissoc attr-map remove-keys)]
-          (assoc item
-            :additional_attributes
-            (maps->string-format
-              (if (empty? ddd) "" ddd))))
-        (assoc item
-          :additional_attributes
-          "")))))
-
-(utils/maps->csv-file (remove-attrs) "g:/remove-addr.csv")
+(defn find-duplicate-key
+  "找出map-list中值重复的key"
+  [map-list]
+  (keys (filter
+          #(< (count (second %)) 2)
+          (apply merge-with
+                 into
+                 (map (partial walk/walk (fn [[k v]] {k #{v}}) identity) map-list)))))
 
 
-(empty? (dissoc {:a 1} :a))
+(defn replace-attributes
+  [data]
+  (let [format-data (map #(update % :additional_attributes (fn [n] (str->map n #"," #"="))) data)
+        dupkeys (find-duplicate-key (map :additional_attributes format-data))]
+    (map #(-> %
+              (assoc :configurable_variation_labels "")
+              (update :additional_attributes
+                      (fn [n] (-> (apply dissoc n dupkeys)
+                                  (maps->string-format)))))
+         format-data)))
 
-(parent-product "UFD0003" source-data)
+(defn replace-variation [data]
+  (if (and (= (:product_type (first data)) "configurable")
+           (> (count data) 2))
+    (let [subrs (-> (subvec (vec data) 2)
+                    (->> (map (fn [item]
+                                (if-not (empty? (:additional_attributes item))
+                                  (str "sku=" (:sku item) "," (:additional_attributes item))
+                                  (str "sku=" (:sku item)))))))]
+      (cons (assoc (first data) :configurable_variations (str/join "|" subrs))
+            (subvec (vec data) 1)))
+    data))
 
-(-> (get (parent-product "UFD0003" source-data) :sku)
-    (like-sku source-data)
-    (->> (filter #(not (empty? (get % :additional_attributes))))
-         (map #(-> (get % :additional_attributes)
-                   (str->map #"," #"="))))
-    (find-single-key))
+(defn modify-description [s]
+  (if (re-find #"</p>" s)
+    (let [html (str/split s #"</p>\n<img")
+          html-vec (-> html
+                       (first)
+                       (str/split #"\n"))
+          total (count html-vec)]
+      (-> (conj (sub-coll html-vec 0 (/ total 27))
+                (str (last html-vec) "</p>"))
+          (->> (str/join #""))
+          (#(if (second html) (str % "<img" (second html)) %))))
+    s))
 
-(-> (find-sku "UFD0003" source-data)
-    (like-sku source-data)
-    (->> (filter #(not (empty? (get % :additional_attributes)))))
-    (->> (map #(-> (get % :additional_attributes)
-                   (str->map #"," #"="))))
-    (find-single-key))
+(defn do-modify-attr []
+  (-> (mapcat (comp replace-variation replace-attributes) (vals group-data))
+      (->> (map #(update % :weight (fn [n] (if-not (empty? n) (float (/ (utils/parse-int n) 1000)))))))
+      (->> (map #(update % :description modify-description)))
+      (utils/maps->csv-file "g:/remove-attr.csv")))
+
+(do-modify-attr)
 
 
-
-
-
-#_(-> (utils/read-excel->map "/Users/huangyesheng/Documents/upload_template-1228-v3.xls" "upload_template")
-    (->> (map remove-map-space))
-    (count))
-
-
-#_(-> (utils/read-excel->map "g:/upload_template-1228-v2.xlsx" "upload_template")
-    (->> (map remove-map-space))
-    (attribute-set))
-
-#_(let [list (-> (utils/read-excel
-                   "g:/upload_template2.xlsx"
-                   "upload_template"
-                   excel-map)
-                 rest
-                 (->> (map remove-map-space)))]
-  (-> (map #(convert-data % list) list)
-      (sub-result)
-      (create-magento-product-list)
-      (->> (map #(:url_key %))
-           (group-by identity))))

@@ -75,6 +75,9 @@
   [s n]
   (subs s 0 (min (count s) n)))
 
+(defn parse-int [s]
+  (Integer. (re-find  #"\d+" s )))
+
 (defn maps->csv-file [data file]
   (with-open [writer (io/writer file)]
     (csv/write-csv
