@@ -13,6 +13,8 @@
     (HanLP/extractKeyword 100))
 
 
+(filter #{1 2} [1  3 4])
+
 
 
 (HanLP/extractKeyword "签约仪式前，秦光荣、李纪恒、仇和等一同会见了参加签约的企业家" 5)

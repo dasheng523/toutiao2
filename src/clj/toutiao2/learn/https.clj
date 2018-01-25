@@ -6,7 +6,8 @@
             [clojure.tools.logging :as log]
             [net.cgrand.enlive-html :as enlive]
             [toutiao2.tuding.search-engine :as search-engine])
-  (:import (java.io StringReader)))
+  (:import (java.io StringReader)
+           (com.hankcs.hanlp HanLP)))
 
 (def number-map
   {"1" "一"
@@ -41,6 +42,26 @@
             m
             ks)))
 
+
+
+(defn match-account
+  "统计两个字符串的匹配数"
+  [source target]
+  (let [source-keys (HanLP/extractKeyword source 1000)
+        target-keys (HanLP/extractKeyword target 1000)]
+    (account-keyword source (filter (set target-keys) source-keys))))
+
+(defn result-match-account [m]
+  (str (count m) "-" (reduce + (vals m))))
+
+(defn search-targets [source targets]
+  (map #(identity {% ((comp result-match-account
+                            (partial match-account source)) %)})
+       targets))
+
+(defn account-options [question options search]
+  (for [o options]
+    {o (match-account (search o) question)}))
 
 (defn find-question [question options search-method]
   (-> (search-method question)
@@ -85,15 +106,13 @@
 
 (defn- get-question [token]
   (-> (http/get (str domain "/msg/current")
-                (-> default-params
-                    (merge-token token)))
+                (-> default-params (merge-token token)))
       :body))
 
 
 (defn- get-test-question [file]
   (-> file
       slurp))
-
 
 
 (defn- do-logic []
@@ -105,8 +124,7 @@
       (println (str "content: " content))
       (let [{:keys [question options] :as question-info}
             (parse-question-info content)
-            rs-fun (partial (comp compute-percent find-question)
-                            question options)]
+            rs-fun #(search-targets (% question) options)]
         (when question
           (println question)
           (println options)
@@ -118,18 +136,10 @@
           (future (println "baidu"
                            (rs-fun search-engine/baidu-search)))
 
-          (when (some #(re-find #"\d" %) options)
-            (let [rs-fun2 (partial (comp compute-percent find-question)
-                                   (map number-synonym options))]
-              (future (println (compute-percent
-                                (rs-fun2
-                                 search-engine/google-search))))
-              (future (println (compute-percent
-                                (rs-fun2
-                                 search-engine/baidu-search))))
-              (future (println (compute-percent
-                                (rs-fun2
-                                 search-engine/biying-search)))))))))
+          (future (println (account-options question options search-engine/google-search)))
+          #_(future (println "biying" (account-options question options search-engine/biying-search)))
+          #_(future (println "baidu" (account-options question options search-engine/baidu-search)))
+          )))
     (catch Exception e
       (log/error (.getMessage e)))))
 
@@ -140,18 +150,35 @@
 
 
 
+(defn search-targets [source targets]
+  (map #(identity {% ((comp result-match-account
+                            (partial match-account source)) %)})
+       targets))
+
+(defn account-options [question options search]
+  (doseq [o options]
+    (println {o (match-account (search o) question)})))
+
+(sss "AlphaGo没有战胜过以下哪位选手?"
+     ["柯洁" "周睿羊" "许银川"]
+     search-engine/baidu-search)
+
+(search-targets (search-engine/baidu-search "AlphaGo没有战胜过以下哪位选手?")
+                ["柯洁" "周睿羊" "许银川"])
 
 
+(match-account (search-engine/biying-search "全球首款人工智能手机芯片是?")
+               "麒麟950芯片")
+(match-account (search-engine/biying-search "全球首款人工智能手机芯片是?")
+               "麒麟960芯片")
+(-> (match-account (search-engine/google-search "周睿羊")
+                   "AlphaGo没有战胜过以下哪位选手")
+    result-match-account)
+(-> (match-account (search-engine/google-search "《生化危机6》")
+                   "以下哪部电影中出现了超级计算机“红后”？")
+    result-match-account)
 
-
-
-
-
-
-
-
-
-
+(HanLP/extractKeyword "以下哪部电影中出现了超级计算机“红后”？" 100)
 
 
 (Def ss "/cdn/h/1/comment/brow/13241410?iid=23704761247&device_id=21101274775&ac=wifi&channel=xiaomi&aid=1248&app_name=fantasy&version_code=601&version_name=6.0.1&device_platform=android&ssmix=a&device_type=MI+5&device_brand=Xiaomi&language=zh&os_api=24&os_version=7.0&openudid=4112f307c9f2f01c&manifest_version_code=101&resolution=1080*1920&dpi=480&update_version_code=6010&_rticket=1516285394581")
@@ -160,8 +187,6 @@
 
 (def ss-url (str "http://api-spe-ttl.ixigua.com" ss2))
 (println (http/get ss-url {:as "utf-8"}))
-
-
 
 
 
@@ -182,16 +207,6 @@
     (merge-body (json/generate-string {"text" "aaaaaaaaa"
                                        "type" "1"
                                        "liveId" "18363"})))
-
-#_(-> (str domain "/msg/current")
-    (query-get {})
-    :body
-    (parse-question-info))
-
-#_(-> "/Users/huangyesheng/Downloads/11.txt"
-    slurp
-    (parse-question-info))
-
 
 
 

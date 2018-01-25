@@ -101,10 +101,25 @@
       (StringReader.)
       (enlive/html-resource)))
 
+(defn text-selector
+  [nodes node-select]
+  (str/join
+    "\n"
+    (map (fn [n]
+           (enlive/text n))
+         (enlive/select nodes node-select))))
 
-(defn get-html-text [html selector]
-  (-> (to-enlive html)
-      (enlive/select selector)
-      (enlive/texts)
-      (first)))
+(defn href-selector
+  "取第一个匹配结果的URL"
+  [nodes node-select]
+  (let [find-rs (enlive/select nodes node-select)]
+    (if-not (empty? find-rs)
+      (-> find-rs first :attrs :href))))
+
+(defn hrefs-selector
+  "取所有匹配结果的URL"
+  [nodes node-select]
+  (let [find-rs (enlive/select nodes node-select)]
+    (if find-rs
+      (map #(-> % :attrs :href) find-rs))))
 

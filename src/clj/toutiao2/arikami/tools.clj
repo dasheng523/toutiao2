@@ -400,6 +400,79 @@
 (do-fr)
 
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;; 修改属性 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def source-data (utils/csv-file->maps "g:/catalog_product_20180118_022755.csv"))
+
+
+(defn find-single-key
+  "找出val一样的Key"
+  [list]
+  (keys (filter #(< (count (second %)) 2)
+                (apply merge-with
+                       into
+                       (map (partial walk/walk
+                                     (fn [[k v]] {k #{v}}) identity)
+                            list)))))
+
+(defn- like-sku [sku list]
+  (filter #(and (str/starts-with? (:sku %) sku)) list))
+
+(defn- str->map [s item-sp val-sp]
+  (reduce #(let [info (str/split %2 val-sp)]
+             (assoc %1 (first info) (second info)))
+          {}
+          (str/split s item-sp)))
+
+
+
+(defn remove-attrs []
+  (for [item source-data]
+    (let [attr (get item :additional_attributes)
+          sku (get item :sku)
+          parent (parent-product sku source-data)]
+      (if (and parent (not (empty? attr)))
+        (let [remove-keys (-> (get (parent-product sku source-data) :sku)
+                             (like-sku source-data)
+                             (->> (filter #(not (empty? (get % :additional_attributes)))))
+                             (->> (map #(-> (get % :additional_attributes)
+                                            (str->map #"," #"="))))
+                             (find-single-key))
+              attr-map (str->map attr #"," #"=")
+              ddd (apply dissoc attr-map remove-keys)]
+          (assoc item
+            :additional_attributes
+            (maps->string-format
+              (if (empty? ddd) "" ddd))))
+        (assoc item
+          :additional_attributes
+          "")))))
+
+(utils/maps->csv-file (remove-attrs) "g:/remove-addr.csv")
+
+
+(empty? (dissoc {:a 1} :a))
+
+(parent-product "UFD0003" source-data)
+
+(-> (get (parent-product "UFD0003" source-data) :sku)
+    (like-sku source-data)
+    (->> (filter #(not (empty? (get % :additional_attributes))))
+         (map #(-> (get % :additional_attributes)
+                   (str->map #"," #"="))))
+    (find-single-key))
+
+(-> (find-sku "UFD0003" source-data)
+    (like-sku source-data)
+    (->> (filter #(not (empty? (get % :additional_attributes)))))
+    (->> (map #(-> (get % :additional_attributes)
+                   (str->map #"," #"="))))
+    (find-single-key))
+
+
+
+
+
 #_(-> (utils/read-excel->map "/Users/huangyesheng/Documents/upload_template-1228-v3.xls" "upload_template")
     (->> (map remove-map-space))
     (count))
