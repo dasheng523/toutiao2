@@ -45,6 +45,7 @@
    :is_qty_decimal             0
    :out_of_stock_qty           0.0000
    :product_websites           "base"
+   :attribute_set_code "Default"
    :max_cart_qty               1000
    :use_config_qty_increments  1
    :qty 1000
@@ -58,7 +59,8 @@
    :weight 0})
 
 (defn trim-map-val [m]
-  (reduce #(update %1 %2 str/trim) m (keys m)))
+  (reduce (fn [rs k] (update rs k #(if (string? %) (str/trim %) %))) m (keys m)))
+
 
 (defn- name->url-key [name sku]
   (-> name
@@ -88,6 +90,13 @@
        "option" (-> (:option data) format-attr)}
       (->> (filter second)
            (into {}))))
+
+(def ddmap {:color 90
+            :size 134
+            :type 144
+            :capacity 145
+            :option 146
+            :material 147})
 
 (defn maps->string-format [m]
   (->> m
@@ -149,13 +158,6 @@
     list))
 
 
-(defn- remove-map-space [m]
-  (into {}
-        (map (fn [one]
-               (if (string? (second one))
-                 {(first one) (str/trim (second one))}
-                 one)) m)))
-
 (defn convert-images [data list]
   (let [image (-> (:image data)
                   (str/split #";")
@@ -198,49 +200,51 @@
                   (str/split #";")
                   first
                   (str/replace #"&" ""))]
-    {:name (:name_en data)
-     :price (:price data)
-     :special_price (:special_price data)
-     :base_image image
-     :thumbnail_image image
-     :small_image image
-     :additional_images (convert-additional_images data list)
-     :sku (:sku data)
-     :categories (-> (:categories data) (str/replace #"," "") (str/replace #";" ","))
-     :product_type (:product_type data)
-     :configurable_variations (convert-configvar data list)
-     :meta_title (:meta_title data)
-     :meta_keywords (-> (name->url-key (get data :name_en "") (get data :sku ""))
-                        (str/replace #"-" ","))
-     :meta_description (:meta_description data)
-     :short_description (if (:description_en data) (utils/trunc (:description_en data) 500))
-     :description (generate-description data)
-     :additional_attributes (convert-addattr data)
-     :weight (:weight data)
-     :visibility (if (and (= (get data :product_type) "simple")
-                          (parent-product (:sku data) list)
-                          (not= (parent-product (:sku data) list) data))
-                   "Not Visible Individually"
-                   "Catalog, Search")
-     :url_key (name->url-key (get data :name_en "") (get data :sku ""))}))
+    (merge {:sku (:sku data)
+            :name (:name_en data)
+            :price (:price data)
+            :special_price (:special_price data)
+            :description (generate-description data)
+            :categories (-> (:categories data) (str/replace #"," "") (str/replace #";" ","))
+            :product_type (:product_type data)
+            :meta_title (:meta_title data)
+            :meta_keywords (-> (name->url-key (get data :name_en "") (get data :sku ""))
+                               (str/replace #"-" ","))
+            :meta_description (:meta_description data)
+            :short_description (if (:description_en data) (utils/trunc (:description_en data) 500))
+            :additional_attributes (convert-addattr data)
+            :configurable_variations (convert-configvar data list)
+            :weight (* (:weight data) 1000)
+            :visibility (if (and (= (get data :product_type) "simple")
+                                 (parent-product (:sku data) list)
+                                 (not= (parent-product (:sku data) list) data))
+                          "Not Visible Individually"
+                          "Catalog, Search")
+            :url_key (name->url-key (get data :name_en "") (get data :sku ""))}
+           (convert-images data list))))
 
 
-(defn create-magento-product-list [data]
+(defn create-magento-product [data]
   (merge empty-product-info default-product-info data))
 
+"G:\\二次产品\\product2-2.4.xlsx"
+"G:\\二次产品\\第一次产品字段更新.xlsx"
 
-
-(defn do-write []
-  (let [list (-> (utils/read-excel->map "/Users/huangyesheng/Documents/upload_template-1228-v3.xls" "upload_template")
+(defn do-write [in-data out-file]
+  (let [list (-> in-data
                  (->> (map trim-map-val)))]
     (if (s/valid? ::data-list list)
-      (-> (map #(-> (convert-data % list) create-magento-product-list) list)
-          (create-magento-product-list)
-          (utils/maps->csv-file "/Users/huangyesheng/Documents/2333.csv"))
+      (-> (map #(-> (convert-data % list) create-magento-product) list)
+          (utils/maps->csv-file out-file))
       (-> (s/explain-data ::data-list list)
           (get :clojure.spec.alpha/problems)))))
 
-(do-write)
+(do-write (utils/read-excel->map "G:\\二次产品\\第一次产品字段更新.xlsx" "upload_template") "G:/23331.csv")
+(do-write (utils/read-excel->map "G:\\二次产品\\product2-2.4.xlsx" "整合分类") "G:/23332.csv")
+
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; verify-images ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -288,7 +292,6 @@
          {:name (:name_fr data)
           :sku (:sku data)
           :store_view_code "french"
-          :attribute_set_code "default"
           :product_type "configurable"
           :description (generate-fr-description data english-data)
           :url_key (name->url-key (get data :name_fr "") (get data :sku ""))}))
