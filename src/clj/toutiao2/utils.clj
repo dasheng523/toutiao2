@@ -126,3 +126,10 @@
     (if find-rs
       (map #(-> % :attrs :href) find-rs))))
 
+(defn find-first-in-list [pred list]
+  (first (drop-while (comp not pred) list)))
+
+
+
+(defn replace-in-list [coll n x]
+  (concat (take n coll) (list x) (nthnext coll (inc n))))

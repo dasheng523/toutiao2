@@ -57,107 +57,8 @@
    :product_type "simple"
    :weight 0})
 
-
-
-#_(defn create-magento-product-list [list]
-  (let [data (map
-               (fn [info]
-                 {:use_config_max_sale_qty    1
-                  :description                (get info :description "")
-                  :bundle_values              ""
-                  :thumbnail_image            (get info :base_image "")
-                  :bundle_sku_type            ""
-                  :custom_design_from         ""
-                  :manage_stock               1
-                  :custom_design_to           ""
-                  :small_image_label          ""
-                  :use_config_enable_qty_inc  0
-                  :associated_skus            ""
-                  :map_enabled                ""
-                  :swatch_image               ""
-                  :bundle_shipment_type       ""
-                  :enable_qty_increments      0
-                  :new_from_date              ""
-                  :crosssell_skus             ""
-                  :special_price              (get info :special_price "")
-                  :configurable_variations    (get info :configurable_variations "")
-                  :website_id                 0
-                  :meta_title                 (get info :meta_title "")
-                  :name                       (get info :name "")
-                  :use_config_min_qty         1
-                  :gift_message_available     ""
-                  :min_cart_qty               1.0000
-                  :related_skus               ""
-                  :country_of_manufacture     ""
-                  :use_config_backorders      1
-                  :bundle_price_type          ""
-                  :custom_design              ""
-                  :product_online             1
-                  :qty_increments             0.0000
-                  :swatch_image_label         ""
-                  :notify_on_stock_below      1
-                  :display_product_options_in "Block after Info Column"
-                  :upsell_position            ""
-                  :meta_keywords              (-> (name->url-key (get info :name "") (get info :sku ""))
-                                                  (str/replace #"-" ","))
-                  :short_description          (get info :short_description)
-                  :msrp_price                 ""
-                  :product_options_container  ""
-                  :use_config_manage_stock    1
-                  :product_type               (get info :product_type "simple")
-                  :hide_from_product_page     ""
-                  :sku                        (get info :sku)
-                  :related_position           ""
-                  :updated_at                 (l-t/local-now)
-                  :base_image                 (:base_image info)
-                  :additional_images          (:additional_images info)
-                  :tax_class_name             "Taxable Goods"
-                  :is_qty_decimal             0
-                  :out_of_stock_qty           0.0000
-                  :bundle_weight_type         ""
-                  :categories                 (:categories info)
-                  :product_websites           "base"
-                  :special_price_to_date      nil
-                  :weight                     (* (get info :weight 0) 1000)
-                  :max_cart_qty               1000
-                  :use_config_qty_increments  1
-                  :additional_image_labels    (get info :additional_image_labels nil)
-                  :meta_description (get info :meta_description)
-                  :map_price ""
-                  :crosssell_position ""
-                  :additional_attributes (get info :additional_attributes)
-                  :qty 1000
-                  :is_decimal_divided 0
-                  :use_config_min_sale_qty 1
-                  :is_in_stock 1
-                  :use_config_notify_stock_qty 1
-                  :url_key (name->url-key (get info :name "") (get info :sku ""))
-                  :custom_layout_update ""
-                  :bundle_price_view ""
-                  :thumbnail_image_label ""
-                  :special_price_from_date ""
-                  :allow_backorders 0
-                  :small_image (:base_image info)
-                  :price (:price info)
-                  :new_to_date ""
-                  :visibility (if (and (= (get info :product_type) "simple")
-                                       (parent-product (:sku info) list)
-                                       (not= (parent-product (:sku info) list) info))
-                                "Not Visible Individually"
-                                "Catalog, Search")
-                  :attribute_set_code "Default"
-                  :configurable_variation_labels ""
-                  :store_view_code (get info :store_view_code "")
-                  :msrp_display_actual_price_type ""
-                  :custom_options ""
-                  :upsell_skus ""
-                  :created_at (l-t/local-now)
-                  :base_image_label ""
-                  :page_layout ""})
-               list)]
-    data))
-
-
+(defn trim-map-val [m]
+  (reduce #(update %1 %2 str/trim) m (keys m)))
 
 (defn- name->url-key [name sku]
   (-> name
@@ -197,18 +98,22 @@
   (-> (get-attrs data)
       (maps->string-format)))
 
-(defn generate-description [data]
-  (let [img-str (if (string? (:des_image data))
-                    (-> (str/split (:des_image data) #";")
-                        (->> (map #(str "http://www.arikami.com/media/Products/" %)))
-                        (->> (map #(str "<img src=\"" % "\">")))
-                        (->> (str/join "\n"))))
-        desc (if (string? (:description_en data))
-               (-> (:description_en data)
-                   (str/split #"\n")
-                   (->> (map #(str "<p>" % "</p>"))
-                        (str/join "\n"))))]
-    (str desc "\n" img-str)))
+(defn generate-description
+  ([data]
+   (generate-description data :description_en))
+  ([data desc-key]
+   (let [img-str (if (string? (:des_image data))
+                   (-> (str/split (:des_image data) #";")
+                       (->> (map #(str "http://www.arikami.com/media/Products/" %)))
+                       (->> (map #(str "<img src=\"" % "\">")))
+                       (->> (str/join "\n"))))
+         desc (if (string? (desc-key data))
+                (-> (desc-key data)
+                    (str/split #"\n")
+                    (->> (map #(str "<p>" % "</p>"))
+                         (str/join "\n"))))]
+     (str desc "\n" img-str))))
+
 
 
 (defn convert-configvar [data list]
@@ -251,6 +156,20 @@
                  {(first one) (str/trim (second one))}
                  one)) m)))
 
+(defn convert-images [data list]
+  (let [image (-> (:image data)
+                  (str/split #";")
+                  first
+                  (str/replace #"&" ""))]
+    {:base_image image
+     :thumbnail_image image
+     :small_image image
+     :additional_images (convert-additional_images data list)}))
+
+(defn find-sku [sku list]
+  (-> list
+      (->> (filter #(= sku (:sku %))))
+      (first)))
 
 
 (s/check-asserts true)
@@ -313,7 +232,7 @@
 
 (defn do-write []
   (let [list (-> (utils/read-excel->map "/Users/huangyesheng/Documents/upload_template-1228-v3.xls" "upload_template")
-                 (->> (map remove-map-space)))]
+                 (->> (map trim-map-val)))]
     (if (s/valid? ::data-list list)
       (-> (map #(-> (convert-data % list) create-magento-product-list) list)
           (create-magento-product-list)
@@ -329,55 +248,31 @@
   (-> (into [] coll)
       (subvec start end)))
 
-(defn verify-images
-  "验证图片有效性"
-  []
-  (let [data (-> (utils/read-excel->map "/Users/huangyesheng/Documents/upload_template-1228-v3.xls" "upload_template")
-                 (->> (map remove-map-space)))
-        urls (->> (mapcat (fn [info]
-                            (-> (str (:image info) ";" (:des_image info))
-                                (str/split #";")
-                                (->> (map #(str "http://www.arikami.com/media/Products/" (str/trim %))))))
-                          data)
-                  (into #{}))]
-    (println (count urls))
-    (future (doseq [url (sub-coll urls 1 500)]
-              (try
-                (if (not= (:status (http/head url)) 200)
-                  (println url))
-                (catch Exception e
-                  (println url)))))
-    (future (doseq [url (sub-coll urls 500 1000)]
-              (try
-                (if (not= (:status (http/head url)) 200)
-                  (println url))
-                (catch Exception e
-                  (println url)))))
-    (future (doseq [url (sub-coll urls 1000 1500)]
-              (try
-                (if (not= (:status (http/head url)) 200)
-                  (println url))
-                (catch Exception e
-                  (println url)))))
-    (future (doseq [url (sub-coll urls 1500 1776)]
-              (try
-                (if (not= (:status (http/head url)) 200)
-                  (println url))
-                (catch Exception e
-                  (println url)))))))
+(defn async-do [list dofun speed]
+  (let [numcount (quot (count list) speed)
+        parts (partition numcount numcount [] list)]
+    (doseq [part parts]
+      (future (doseq [item part] (dofun item))))))
 
-(verify-images)
+(defn verify-urls [urls]
+  (async-do urls
+            #(try
+               (if (not= (:status (http/head (str "http://www.arikami.com/media/Products/" %))) 200)
+                 (println %))
+               (catch Exception e
+                 (println %)))
+            10))
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; Fr ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn find-sku [sku english-data]
-  (-> english-data
-      (->> (filter #(= sku (:sku %))))
-      (first)))
+
 
 (def english-data (utils/csv-file->maps "g:/catalog_product_20180115_015420.csv"))
 
-(defn- generate-fr-description [data]
-  (let [resource-info (find-sku (:sku data) english-data)]
+(defn- generate-fr-description [data source-data]
+  (let [resource-info (find-sku (:sku data) source-data)]
     (when resource-info
       (if (= "" (-> (:description_fr data) str str/trim))
         ""
@@ -395,18 +290,15 @@
           :store_view_code "french"
           :attribute_set_code "default"
           :product_type "configurable"
-          :description (generate-fr-description data)
+          :description (generate-fr-description data english-data)
           :url_key (name->url-key (get data :name_fr "") (get data :sku ""))}))
 
-
-(defn map-val-trim [m]
-  (reduce #(update %1 (first %2) (comp str/trim str)) m m))
 
 (defn do-fr []
   (-> (utils/read-excel->map "g:/FR.xlsx" "upload_template")
       (->> (filter #(and (not= (:sku %) "")
                          (not (str/includes? (:sku %) "-")))))
-      (->> (map (comp fr-data map-val-trim)))
+      (->> (map (comp fr-data trim-map-val)))
       (utils/maps->csv-file "g:/fr.csv")))
 
 (do-fr)
@@ -482,3 +374,83 @@
 (do-modify-attr)
 
 
+;;;;;;;;;;;;;;;;;;; 更新字段
+(def source-data (utils/csv-file->maps "G:/catalog_product_20180207_021328.csv"))
+(def excel-data (utils/read-excel->map "G:\\二次产品\\第一次产品字段更新.xlsx" "upload_template"))
+(def new-excel-data (utils/read-excel->map "G:\\二次产品\\product2-2.4.xlsx" "整合分类"))
+
+
+
+(defn export-en-data [excel-data]
+  (map (fn [info]
+         (merge {:sku (:sku info)
+                 :categories (:categories info)
+                 :name (:name_en info)
+                 :description (generate-description info)}
+                (convert-images info excel-data)))
+       excel-data))
+
+(defn export-fr-data [excel-data]
+  (map (fn [info]
+         (merge {:sku (:sku info)
+                 :name (:name_fr info)
+                 :store_view_code "french"
+                 :description (generate-description info :description_fr)}))
+       excel-data))
+
+(defn export-es-data [excel-data]
+  (map (fn [info]
+         (merge {:sku (:sku info)
+                 :name (:name_es info)
+                 :store_view_code "spanish"
+                 :description (generate-description info :description_es)}))
+       excel-data))
+
+
+(defn find-first-index-in-list [pred list]
+  (.indexOf list (utils/find-first-in-list pred list)))
+
+(defn replace-en-data [source-data]
+  (reduce (fn [slist info]
+            (let [index (find-first-index-in-list
+                          #(and (= (:sku %) (:sku info))
+                                (<= (count (:store_view_code %)) 0))
+                          slist)]
+              (if (= index -1)
+                slist
+                (update-in (vec slist) [index] merge info))))
+          source-data
+          (-> excel-data export-en-data (->> (map trim-map-val)) doall)))
+
+(defn replace-fr-data [source-data]
+  (reduce (fn [slist info]
+            (let [index (find-first-index-in-list
+                          #(and (= (:sku %) (:sku info))
+                                (= (:store_view_code %) "french"))
+                          slist)]
+              (if (= index -1)
+                slist
+                (update-in (vec slist) [index] merge info))))
+          source-data
+          (-> excel-data export-fr-data (->> (map trim-map-val)) doall)))
+
+
+(def handle-data (-> source-data
+                     replace-en-data
+                     replace-fr-data))
+
+(utils/maps->csv-file (-> handle-data
+                          (->> (map #(dissoc % :additional_attributes))))
+                      "g:/product-old-handle.csv")
+
+
+(defn find-error-index
+  []
+  (filter #(= (first (vals %)) -1)
+          (map (fn [info]
+                 {(:sku info) (find-first-index-in-list #(and (= (:sku %) (:sku info))
+                                                              (<= (count (:store_view_code %)) 0))
+                                                        source-data)})
+               (-> excel-data export-en-data (->> (map trim-map-val))))))
+
+(verify-urls (set (mapcat #(str/split (:image %) #";") new-excel-data)))
