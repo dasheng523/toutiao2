@@ -130,6 +130,14 @@
   (first (drop-while (comp not pred) list)))
 
 
+(defn async-do
+  "并行计算"
+  [list handler speed]
+  (let [numcount (quot (count list) speed)
+        parts (partition numcount numcount [] list)]
+    (doseq [part parts]
+      (future (doseq [item part] (handler item))))))
+
 
 (defn replace-in-list [coll n x]
   (concat (take n coll) (list x) (nthnext coll (inc n))))

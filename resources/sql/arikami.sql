@@ -50,6 +50,36 @@ from :i:table
 
 
 
+-- :name insert-attribute-option :i!
+insert into `eav_attribute_option`
+(`attribute_id`, `sort_order`)
+values (:attribute_id, :sort_order)
+
+-- :name insert-attribute-option-tuple :i!
+insert into `eav_attribute_option`
+(`attribute_id`, `sort_order`)
+values :tuple*:datas
+
+-- :name insert-attribute-option-value :i!
+insert into `eav_attribute_option_value`
+(`option_id`, `store_id`, `value`)
+values (:option_id, :store_id, :value)
+
+-- :name insert-attribute-option-value-tuple :i!
+insert into `eav_attribute_option_value`
+(`option_id`, `store_id`, `value`)
+values :tuple*:datas
+
+-- :name insert-attribute-option-swatch :i!
+insert into `eav_attribute_option_swatch`
+(`option_id`, `store_id`, `type`, `value`)
+values (:option_id, :store_id, :type, :value)
+
+-- :name insert-attribute-option-swatch-tuple :! :n
+insert into `eav_attribute_option_swatch`
+(`option_id`, `store_id`, `type`, `value`)
+values :tuple*:datas
+
 -- :name delete-attribute-option-by-attrs :i!
 delete from `eav_attribute_option`
 where attribute_id=:attrid
@@ -58,8 +88,26 @@ where attribute_id=:attrid
 delete from `eav_attribute_option_value`
 where option_id in (:v*:options)
 
+-- :name delete-attribute-option-swatch-by-options :i!
+delete from `eav_attribute_option_swatch`
+where option_id in (:v*:options)
+
 -- :name get-attribute-option-by-attrid :? :*
 SELECT * FROM `eav_attribute_option` where attribute_id=:attrid
+
+-- :name get-attribute-option-value-by-attrid :? :*
+select * from `eav_attribute_option_value`
+where `option_id` in (
+    SELECT `option_id` FROM `eav_attribute_option` where attribute_id=:attrid
+)
+
+
+-- :name get-all-store-data :? :*
+SELECT * FROM `store`
+
+-- :name delete-all-category-index-data :i!
+DELETE FROM `url_rewrite` where `entity_type`='category' or `entity_type`='product'
+
 
 -- :name get-by-url :? :1
 -- :doc get-by-url

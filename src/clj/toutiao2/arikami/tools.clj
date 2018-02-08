@@ -1,10 +1,12 @@
 (ns toutiao2.arikami.tools
   (:require [toutiao2.utils :as utils]
+            [toutiao2.arikami.db :as db]
             [clj-time.local :as l-t]
             [clojure.string :as str]
             [clj-http.client :as http]
             [clojure.spec.alpha :as s]
-            [clojure.walk :as walk]))
+            [clojure.walk :as walk]
+            [ring.util.codec :as codec]))
 
 (def import-field
   [:use_config_max_sale_qty :description :thumbnail_image :bundle_sku_type :custom_design_from
@@ -62,10 +64,16 @@
   (reduce (fn [rs k] (update rs k #(if (string? %) (str/trim %) %))) m (keys m)))
 
 
-(defn- name->url-key [name sku]
+(defn- name->url-key [name idstr]
   (-> name
-      (str "-" sku)
+      (str "-" idstr)
+      (codec/url-encode)
       (str/lower-case)
+      (str/replace #"=" "-")
+      (str/replace #"," "-")
+      (str/replace #"'" "-")
+      (str/replace #"\." "")
+      (str/replace #"/" "-")
       (str/replace #" " "-")))
 
 (defn- sub-products [sku list]
@@ -79,7 +87,8 @@
 (defn- format-attr [s]
   (if s
     (-> (if (number? s) (str (int s)) s)
-        (str/replace #"," " -"))))
+        (str/replace #"," " -")
+        (str/trim))))
 
 (defn get-attrs [data]
   (-> {"color" (-> (:color data) format-attr)
@@ -91,12 +100,6 @@
       (->> (filter second)
            (into {}))))
 
-(def ddmap {:color 90
-            :size 134
-            :type 144
-            :capacity 145
-            :option 146
-            :material 147})
 
 (defn maps->string-format [m]
   (->> m
@@ -145,7 +148,7 @@
         (str/replace #"&" ""))))
 
 
-(defn- attribute-set
+(defn- attribute-dataset
   "导出所有属性值"
   [list]
   (reduce
@@ -156,6 +159,13 @@
               (keys m)))
     {:color #{} :material #{} :size #{} :type #{} :capacity #{} :option #{}}
     list))
+
+(def attribute-map {:color 90
+                    :size 134
+                    :type 144
+                    :capacity 145
+                    :option 146
+                    :material 147})
 
 
 (defn convert-images [data list]
@@ -208,7 +218,7 @@
             :categories (-> (:categories data) (str/replace #"," "") (str/replace #";" ","))
             :product_type (:product_type data)
             :meta_title (:meta_title data)
-            :meta_keywords (-> (name->url-key (get data :name_en "") (get data :sku ""))
+            :meta_keywords (-> (name->url-key (get data :name_en "") (:sku data))
                                (str/replace #"-" ","))
             :meta_description (:meta_description data)
             :short_description (if (:description_en data) (utils/trunc (:description_en data) 500))
@@ -220,96 +230,28 @@
                                  (not= (parent-product (:sku data) list) data))
                           "Not Visible Individually"
                           "Catalog, Search")
-            :url_key (name->url-key (get data :name_en "") (get data :sku ""))}
+            :url_key (name->url-key (get data :name_en "") (:sku data))}
            (convert-images data list))))
 
 
-(defn create-magento-product [data]
-  (merge empty-product-info default-product-info data))
-
-"G:\\二次产品\\product2-2.4.xlsx"
-"G:\\二次产品\\第一次产品字段更新.xlsx"
-
-(defn do-write [in-data out-file]
-  (let [list (-> in-data
-                 (->> (map trim-map-val)))]
-    (if (s/valid? ::data-list list)
-      (-> (map #(-> (convert-data % list) create-magento-product) list)
-          (utils/maps->csv-file out-file))
-      (-> (s/explain-data ::data-list list)
-          (get :clojure.spec.alpha/problems)))))
-
-(do-write (utils/read-excel->map "G:\\二次产品\\第一次产品字段更新.xlsx" "upload_template") "G:/23331.csv")
-(do-write (utils/read-excel->map "G:\\二次产品\\product2-2.4.xlsx" "整合分类") "G:/23332.csv")
-
-
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;; verify-images ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defn sub-coll [coll start end]
-  (-> (into [] coll)
-      (subvec start end)))
-
-(defn async-do [list dofun speed]
-  (let [numcount (quot (count list) speed)
-        parts (partition numcount numcount [] list)]
-    (doseq [part parts]
-      (future (doseq [item part] (dofun item))))))
-
-(defn verify-urls [urls]
-  (async-do urls
-            #(try
-               (if (not= (:status (http/head (str "http://www.arikami.com/media/Products/" %))) 200)
-                 (println %))
-               (catch Exception e
-                 (println %)))
-            10))
-
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;; Fr ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-(def english-data (utils/csv-file->maps "g:/catalog_product_20180115_015420.csv"))
-
-(defn- generate-fr-description [data source-data]
-  (let [resource-info (find-sku (:sku data) source-data)]
-    (when resource-info
-      (if (= "" (-> (:description_fr data) str str/trim))
-        ""
-        (-> resource-info
-            :description
-            (str/split #"<p>" 2)
-            first
-            (str "\n" (:description_fr data)))))))
-
-
-(defn fr-data [data]
+(defn fr-data [data _]
   (merge empty-product-info
          {:name (:name_fr data)
           :sku (:sku data)
           :store_view_code "french"
+          :product_type (:product_type data)
+          :description (generate-description data :description_fr)
+          :url_key (name->url-key (get data :name_fr "") (:sku data))}))
+
+(defn es-data [data _]
+  (merge empty-product-info
+         {:name (:name_fr data)
+          :sku (:sku data)
+          :store_view_code "spanish"
           :product_type "configurable"
-          :description (generate-fr-description data english-data)
-          :url_key (name->url-key (get data :name_fr "") (get data :sku ""))}))
+          :description (generate-description data :description_es)
+          :url_key (name->url-key (get data :name_es "") (:sku data))}))
 
-
-(defn do-fr []
-  (-> (utils/read-excel->map "g:/FR.xlsx" "upload_template")
-      (->> (filter #(and (not= (:sku %) "")
-                         (not (str/includes? (:sku %) "-")))))
-      (->> (map (comp fr-data trim-map-val)))
-      (utils/maps->csv-file "g:/fr.csv")))
-
-(do-fr)
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;; 修改属性 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def source-data (utils/csv-file->maps "g:/catalog_product_20180123_074249.csv"))
 
 (defn- str->map [s item-sp val-sp]
   (if (empty? s)
@@ -318,9 +260,6 @@
                (assoc %1 (first info) (second info)))
             {}
             (str/split s item-sp))))
-
-
-(def group-data (group-by #(-> % :sku (str/split #"-") first) source-data))
 
 (defn find-duplicate-key
   "找出map-list中值重复的key"
@@ -355,105 +294,90 @@
             (subvec (vec data) 1)))
     data))
 
-(defn modify-description [s]
-  (if (re-find #"</p>" s)
-    (let [html (str/split s #"</p>\n<img")
-          html-vec (-> html
-                       (first)
-                       (str/split #"\n"))
-          total (count html-vec)]
-      (-> (conj (sub-coll html-vec 0 (/ total 27))
-                (str (last html-vec) "</p>"))
-          (->> (str/join #""))
-          (#(if (second html) (str % "<img" (second html)) %))))
-    s))
-
-(defn do-modify-attr []
-  (-> (mapcat (comp replace-variation replace-attributes) (vals group-data))
-      (->> (map #(update % :weight (fn [n] (if-not (empty? n) (float (/ (utils/parse-int n) 1000)))))))
-      (->> (map #(update % :description modify-description)))
-      (utils/maps->csv-file "g:/remove-attr.csv")))
-
-(do-modify-attr)
 
 
-;;;;;;;;;;;;;;;;;;; 更新字段
-(def source-data (utils/csv-file->maps "G:/catalog_product_20180207_021328.csv"))
-(def excel-data (utils/read-excel->map "G:\\二次产品\\第一次产品字段更新.xlsx" "upload_template"))
-(def new-excel-data (utils/read-excel->map "G:\\二次产品\\product2-2.4.xlsx" "整合分类"))
+(defn remove-duplicate-attribute
+  [target-list]
+  (let [group-data (group-by #(-> % :sku (str/split #"-") first) target-list)]
+    (mapcat (comp replace-variation replace-attributes) (vals group-data))))
 
 
 
-(defn export-en-data [excel-data]
-  (map (fn [info]
-         (merge {:sku (:sku info)
-                 :categories (:categories info)
-                 :name (:name_en info)
-                 :description (generate-description info)}
-                (convert-images info excel-data)))
-       excel-data))
+(defn create-magento-product [data]
+  (merge empty-product-info default-product-info data))
 
-(defn export-fr-data [excel-data]
-  (map (fn [info]
-         (merge {:sku (:sku info)
-                 :name (:name_fr info)
-                 :store_view_code "french"
-                 :description (generate-description info :description_fr)}))
-       excel-data))
-
-(defn export-es-data [excel-data]
-  (map (fn [info]
-         (merge {:sku (:sku info)
-                 :name (:name_es info)
-                 :store_view_code "spanish"
-                 :description (generate-description info :description_es)}))
-       excel-data))
+(defn do-all-data-logic [in-data out-file convert-data]
+  (let [list (-> in-data (->> (map trim-map-val)))]
+    (if (s/valid? ::data-list list)
+      (-> (map #(-> (convert-data % list) create-magento-product) list)
+          (remove-duplicate-attribute)
+          (utils/maps->csv-file out-file))
+      (-> (s/explain-data ::data-list list)
+          (get :clojure.spec.alpha/problems)))))
 
 
-(defn find-first-index-in-list [pred list]
-  (.indexOf list (utils/find-first-in-list pred list)))
 
-(defn replace-en-data [source-data]
-  (reduce (fn [slist info]
-            (let [index (find-first-index-in-list
-                          #(and (= (:sku %) (:sku info))
-                                (<= (count (:store_view_code %)) 0))
-                          slist)]
-              (if (= index -1)
-                slist
-                (update-in (vec slist) [index] merge info))))
-          source-data
-          (-> excel-data export-en-data (->> (map trim-map-val)) doall)))
-
-(defn replace-fr-data [source-data]
-  (reduce (fn [slist info]
-            (let [index (find-first-index-in-list
-                          #(and (= (:sku %) (:sku info))
-                                (= (:store_view_code %) "french"))
-                          slist)]
-              (if (= index -1)
-                slist
-                (update-in (vec slist) [index] merge info))))
-          source-data
-          (-> excel-data export-fr-data (->> (map trim-map-val)) doall)))
+;;;;;;;;;;;;;;;;;;;;;;;;;; attribute ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(def handle-data (-> source-data
-                     replace-en-data
-                     replace-fr-data))
+(defn init-attribute-options
+  "生成属性值，会删除重建"
+  [dataset]
+  (for [[k coll] dataset]
+    (let [attr-id (k attribute-map)
+          exist-text (set (map :value (db/get-attribute-option-value attr-id)))
+          all-options (into exist-text (remove nil? coll))]
+      (println attr-id k)
+      (db/delete-attrubute-option attr-id)
+      (when-not (empty? all-options)
+        (db/insert-options attr-id all-options)))))
 
-(utils/maps->csv-file (-> handle-data
-                          (->> (map #(dissoc % :additional_attributes))))
-                      "g:/product-old-handle.csv")
 
 
-(defn find-error-index
-  []
-  (filter #(= (first (vals %)) -1)
-          (map (fn [info]
-                 {(:sku info) (find-first-index-in-list #(and (= (:sku %) (:sku info))
-                                                              (<= (count (:store_view_code %)) 0))
-                                                        source-data)})
-               (-> excel-data export-en-data (->> (map trim-map-val))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;; verify ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defn sub-coll [coll start end]
+  (-> (into [] coll)
+      (subvec start end)))
+
+
+(defn verify-urls [urls]
+  (utils/async-do urls
+            #(try
+               (if (not= (:status (http/head (str "http://www.arikami.com/media/Products/" %))) 200)
+                 (println %))
+               (catch Exception e
+                 (println %)))
+            10))
+
+(defn verify-sku [list]
+  (map first
+       (filter #(> (count (second %)) 1) (group-by :sku list))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;; main ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def excel-data (utils/read-excel->map "G:\\二次产品\\第一次产品字段更新-v2.xlsx" "upload_template"))
+(def new-excel-data (utils/read-excel->map "G:\\二次产品\\二次产品-改-v2.xlsx" "Sheet1"))
+
+; 校验图片存在
+(verify-urls (set (mapcat #(str/split (:image %) #";") excel-data)))
 (verify-urls (set (mapcat #(str/split (:image %) #";") new-excel-data)))
+; 校验SKU
+(verify-sku excel-data)
+(verify-sku new-excel-data)
+
+; 导入属性值
+(init-attribute-options (attribute-dataset excel-data))
+(init-attribute-options (attribute-dataset new-excel-data))
+
+; 删除index(可选)
+(db/delete-all-category-index)
+
+; 生成主导入文件
+(do-all-data-logic excel-data "G:/data1.csv" convert-data)
+(do-all-data-logic excel-data "G:/data1-fr.csv" fr-data)
+(do-all-data-logic excel-data "G:/data1-es.csv" es-data)
+
+(do-all-data-logic new-excel-data "G:/data2.csv" convert-data)
+(do-all-data-logic new-excel-data "G:/data2-fr.csv" fr-data)
+(do-all-data-logic new-excel-data "G:/data2-es.csv" es-data)
+

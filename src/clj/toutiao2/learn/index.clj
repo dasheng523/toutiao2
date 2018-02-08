@@ -1,4 +1,4 @@
-(ns toutiao2.fulltext.index
+(ns toutiao2.learn.fulltext
   (:require [toutiao2.tuding.search-engine :as search])
   (:import (com.hankcs.hanlp HanLP)
            (com.hankcs.hanlp.suggest Suggester)
