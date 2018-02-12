@@ -43,6 +43,7 @@
    :notify_on_stock_below      1
    :display_product_options_in "Block after Info Column"
    :use_config_manage_stock    1
+   :allow_backorders           1
    :tax_class_name             "Taxable Goods"
    :is_qty_decimal             0
    :out_of_stock_qty           0.0000
@@ -67,14 +68,14 @@
 (defn- name->url-key [name idstr]
   (-> name
       (str "-" idstr)
-      (codec/url-encode)
       (str/lower-case)
       (str/replace #"=" "-")
       (str/replace #"," "-")
-      (str/replace #"'" "-")
-      (str/replace #"\." "")
       (str/replace #"/" "-")
-      (str/replace #" " "-")))
+      (str/replace #" " "-")
+      (str/replace #"\." "")
+      (str/replace #"\+" "")
+      (codec/url-encode)))
 
 (defn- sub-products [sku list]
   (filter #(and (str/starts-with? (:sku %) sku) (not= sku (:sku %))) list))
@@ -215,7 +216,12 @@
             :price (:price data)
             :special_price (:special_price data)
             :description (generate-description data)
-            :categories (-> (:categories data) (str/replace #"," "") (str/replace #";" ","))
+            :categories (-> (:categories data)
+                            (str/replace #",Categories" ";Categories")
+                            (str/replace #", Categories" ";Categories")
+                            (str/replace #", " " ")
+                            (str/replace #"," " ")
+                            (str/replace #";" ","))
             :product_type (:product_type data)
             :meta_title (:meta_title data)
             :meta_keywords (-> (name->url-key (get data :name_en "") (:sku data))
@@ -376,6 +382,7 @@
 (do-all-data-logic excel-data "G:/data1.csv" convert-data)
 (do-all-data-logic excel-data "G:/data1-fr.csv" fr-data)
 (do-all-data-logic excel-data "G:/data1-es.csv" es-data)
+
 
 (do-all-data-logic new-excel-data "G:/data2.csv" convert-data)
 (do-all-data-logic new-excel-data "G:/data2-fr.csv" fr-data)

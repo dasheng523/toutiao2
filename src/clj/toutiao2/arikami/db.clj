@@ -3,12 +3,20 @@
             [clojure.string :as str]))
 
 
-(def arikami-db
+(def arikami-test-db
   {:classname "com.mysql.jdbc.Driver"
    :subprotocol "mysql"
    :subname "//45.77.203.61/test_arikami"
    :user "test"
    :password "1qa@WS3ed"
+   :sslmode "require"})
+
+(def arikami-db
+  {:classname "com.mysql.jdbc.Driver"
+   :subprotocol "mysql"
+   :subname "//45.77.203.61/arikami"
+   :user "arikami"
+   :password "CgzqxZ@S3hYUi4yri"
    :sslmode "require"})
 
 (hugsql/def-db-fns "sql/arikami.sql" {:quoting :mysql})
