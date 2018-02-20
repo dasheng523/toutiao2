@@ -149,7 +149,7 @@
         (str/replace #"&" ""))))
 
 
-(defn- attribute-dataset
+(defn attribute-dataset
   "导出所有属性值"
   [list]
   (reduce
@@ -251,12 +251,21 @@
 
 (defn es-data [data _]
   (merge empty-product-info
-         {:name (:name_fr data)
+         {:name (:name_es data)
           :sku (:sku data)
           :store_view_code "spanish"
           :product_type "configurable"
           :description (generate-description data :description_es)
           :url_key (name->url-key (get data :name_es "") (:sku data))}))
+
+(defn de-data [data _]
+  (merge empty-product-info
+         {:name (:name_de data)
+          :sku (:sku data)
+          :store_view_code "spanish"
+          :product_type "configurable"
+          :description (generate-description data :description_es)
+          :url_key (name->url-key (get data :name_de "") (:sku data))}))
 
 
 (defn- str->map [s item-sp val-sp]
@@ -351,40 +360,43 @@
   (utils/async-do urls
             #(try
                (if (not= (:status (http/head (str "http://www.arikami.com/media/Products/" %))) 200)
-                 (println %))
+                 %)
                (catch Exception e
-                 (println %)))
+                 %))
             10))
 
 (defn verify-sku [list]
   (map first
        (filter #(> (count (second %)) 1) (group-by :sku list))))
 
+(defn delIndex []
+  (db/delete-all-category-index))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;; main ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def excel-data (utils/read-excel->map "G:\\二次产品\\第一次产品字段更新-v2.xlsx" "upload_template"))
-(def new-excel-data (utils/read-excel->map "G:\\二次产品\\二次产品-改-v2.xlsx" "Sheet1"))
+#_(def excel-data (utils/read-excel->map "G:\\二次产品\\第一次产品字段更新-v2.xlsx" "upload_template"))
+#_(def new-excel-data (utils/read-excel->map "G:\\二次产品\\二次产品-改-v2.xlsx" "Sheet1"))
 
 ; 校验图片存在
-(verify-urls (set (mapcat #(str/split (:image %) #";") excel-data)))
-(verify-urls (set (mapcat #(str/split (:image %) #";") new-excel-data)))
+#_(verify-urls (set (mapcat #(str/split (:image %) #";") excel-data)))
+#_(verify-urls (set (mapcat #(str/split (:image %) #";") new-excel-data)))
 ; 校验SKU
-(verify-sku excel-data)
-(verify-sku new-excel-data)
+#_(verify-sku excel-data)
+#_(verify-sku new-excel-data)
 
 ; 导入属性值
-(init-attribute-options (attribute-dataset excel-data))
-(init-attribute-options (attribute-dataset new-excel-data))
+#_(init-attribute-options (attribute-dataset excel-data))
+#_(init-attribute-options (attribute-dataset new-excel-data))
 
 ; 删除index(可选)
-(db/delete-all-category-index)
+#_(db/delete-all-category-index)
 
 ; 生成主导入文件
-(do-all-data-logic excel-data "G:/data1.csv" convert-data)
-(do-all-data-logic excel-data "G:/data1-fr.csv" fr-data)
-(do-all-data-logic excel-data "G:/data1-es.csv" es-data)
+#_(do-all-data-logic excel-data "G:/data1.csv" convert-data)
+#_(do-all-data-logic excel-data "G:/data1-fr.csv" fr-data)
+#_(do-all-data-logic excel-data "G:/data1-es.csv" es-data)
 
 
-(do-all-data-logic new-excel-data "G:/data2.csv" convert-data)
-(do-all-data-logic new-excel-data "G:/data2-fr.csv" fr-data)
-(do-all-data-logic new-excel-data "G:/data2-es.csv" es-data)
+#_(do-all-data-logic new-excel-data "G:/data2.csv" convert-data)
+#_(do-all-data-logic new-excel-data "G:/data2-fr.csv" fr-data)
+#_(do-all-data-logic new-excel-data "G:/data2-es.csv" es-data)
 

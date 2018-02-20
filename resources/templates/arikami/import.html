@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Import Data</title>
+
+        <!-- scripts and styles -->
+        {% style "/assets/bootstrap/css/bootstrap.min.css" %}
+        {% style "/assets/font-awesome/css/font-awesome.min.css" %}
+        {% style "/vendor/css/material-design-iconic-font.min.css" %}
+        {% style "/vendor/css/re-com.css" %}
+        {% style "/css/screen.css" %}
+    </head>
+    <body>
+
+        <div id="app">
+            <div class="container-fluid">
+                <h3>Step 1, select execel file</h3>
+                <div class="row">
+                    <div class="col-6">
+                        <form action="/arikami/import-data" method="post" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <input type="file" class="form-control-file" name="excelfile">
+                            </div>
+                            {% csrf-field %}
+                            <button type="submit" class="btn btn-primary">Upload</button>
+                        </form>
+                    </div>
+
+                    <div class="col-6">
+                        {% for item in filelist %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="filename" id="{{item}}" value="{{item}}">
+                            <label class="form-check-label" for="{{item}}">
+                                {{item}}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <hr>
+                <h3>Step 2, verify excel file</h3>
+                <div class="row">
+                    <div class="col-12">
+                        <button class="btn btn-primary" onclick="verify()">Verify</button>
+                    </div>
+                    <div class="col-12">
+                        <code id="errors"></code>
+                    </div>
+                </div>
+
+                <hr>
+                <h3>Step 3, import attributes</h3>
+                <div class="row">
+                    <div class="col-12">
+                        <button class="btn btn-primary" onclick="importAttr()">import attributes</button>
+                        <button class="btn btn-primary" onclick="delIndex()">delete index(option)</button>
+                    </div>
+                </div>
+
+                <hr>
+                <h3>Step 4, download csv</h3>
+                <div class="row">
+                    <div class="col-12">
+                        <button class="btn btn-primary" onclick="mainCsv()">main csv</button>
+                        <button class="btn btn-primary" onclick="frCsv()">fr csv</button>
+                        <button class="btn btn-primary" onclick="esCsv()">es csv</button>
+                        <button class="btn btn-primary" onclick="deCsv()">de csv</button>
+                    </div>
+                </div>
+
+                <hr>
+                <h3>Step 5, import csv in magento2</h3>
+                <h3>Step 6, rebuild index, flush cache</h3>
+            </div>
+
+
+
+        </div>
+        {% script "/js/jquery-3.3.1.min.js" %}
+
+        <script type="text/javascript">
+         var csrfToken = "{{csrf-token}}";
+        </script>
+
+        <script>
+         function getFileName() {
+           var val = $('input[name=filename]:checked').val()
+           if (val) {
+             return val
+           }
+           alert('请选择文件')
+         }
+
+         function defaultPost(url, handler) {
+           return () => {
+             var filename = getFileName()
+             if (filename) {
+               $.post(url, {"__anti-forgery-token": csrfToken, filename: filename}, handler, 'json')
+             }
+           }
+         }
+
+         const verify = defaultPost('/arikami/verify', (rs) => {
+           console.log(rs)
+         })
+
+         const importAttr = defaultPost('/arikami/importAttr', (rs) => {
+           console.log(rs)
+         })
+
+         const delIndex = defaultPost('/arikami/delIndex', (rs) => {
+           console.log(rs)
+         })
+
+         const mainCsv = defaultPost('/arikami/mainCsv', (rs) => {
+           console.log(rs)
+         })
+
+         const frCsv = defaultPost('/arikami/frCsv', (rs) => {
+           console.log(rs)
+         })
+
+         const esCsv = defaultPost('/arikami/esCsv', (rs) => {
+           console.log(rs)
+         })
+
+         const deCsv = defaultPost('/arikami/deCsv', (rs) => {
+           console.log(rs)
+         })
+
+        </script>
+    </body>
+</html>

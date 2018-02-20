@@ -134,8 +134,11 @@
   "并行计算"
   [list handler speed]
   (let [numcount (quot (count list) speed)
-        parts (partition numcount numcount [] list)]
-    (doseq [part parts]
+        parts (partition numcount numcount [] list)
+        futurelist (map #(future (map (fn [item] (handler item)) %))
+                        parts)]
+    (apply concat (map (fn [n] @n) futurelist))
+    #_(doseq [part parts]
       (future (doseq [item part] (handler item))))))
 
 

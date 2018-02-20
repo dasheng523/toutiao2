@@ -2,6 +2,7 @@
   (:require [compojure.core :refer [routes wrap-routes]]
             [toutiao2.layout :refer [error-page]]
             [toutiao2.routes.home :refer [home-routes]]
+            [toutiao2.routes.arikami :refer [arikami-routes]]
             [toutiao2.routes.services :refer [service-routes]]
             [toutiao2.routes.oauth :refer [oauth-routes]]
             [compojure.route :as route]
@@ -36,6 +37,9 @@
 (def app-routes
   (routes
     (-> #'home-routes
+        (wrap-routes middleware/wrap-csrf)
+        (wrap-routes middleware/wrap-formats))
+    (-> #'arikami-routes
         (wrap-routes middleware/wrap-csrf)
         (wrap-routes middleware/wrap-formats))
     #'oauth-routes
