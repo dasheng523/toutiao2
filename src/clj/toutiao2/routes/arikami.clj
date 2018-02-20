@@ -12,7 +12,7 @@
            [java.nio.file Files LinkOption]
            [java.nio.file.attribute BasicFileAttributes]))
 
-(def upload-path (-> env :upload-path))
+(def upload-path (io/resource "public/upload"))
 
 (defn file-attributes [file]
   "Return the file BasicFileAttributes of file.  File can be a file or a string
@@ -41,12 +41,8 @@
 (defn upload-file
   [path {:keys [tempfile size filename]}]
   (try
-    (with-open [in (new FileInputStream tempfile)
-                out (new FileOutputStream (file-path path filename))]
-      (let [source (.getChannel in)
-            dest   (.getChannel out)]
-        (.transferFrom dest source 0 (.size source))
-        (.flush out)))))
+    (println (file-path path filename))
+    (io/copy tempfile (io/file (file-path path filename)))))
 
 
 (defn verify [filename]

@@ -144,3 +144,6 @@
 
 (defn replace-in-list [coll n x]
   (concat (take n coll) (list x) (nthnext coll (inc n))))
+
+(defn copy-file [source-path dest-path]
+  (io/copy (io/file source-path) (io/file dest-path)))
