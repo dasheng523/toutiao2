@@ -1,4 +1,4 @@
-(ns toutiao2.tuding
+(ns toutiao2.tuding.core
   (:require [clj-http.client :as http]
             [clojure.string :as str]
             [cheshire.core :as json]
@@ -85,9 +85,9 @@
       (query-get)
       :body))
 
-(query-get "https://www.baidu.com")
+#_(query-get "https://www.baidu.com")
 
-(find-answer "9.动画片《海绵宝宝》中，痞老板最害怕的是？")
+#_(find-answer "9.动画片《海绵宝宝》中，痞老板最害怕的是？")
 
 #_(s/assert ::question-spec {:code 0,
                            :msg "成功",
