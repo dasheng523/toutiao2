@@ -44,7 +44,8 @@
                 <h3>Step 2, verify excel file</h3>
                 <div class="row">
                     <div class="col-12">
-                        <button class="btn btn-primary" onclick="verify()">Verify</button>
+                        <button class="btn btn-primary" onclick="verifyImages()">Verify Images(will take long time)</button>
+                        <button class="btn btn-primary" onclick="verifySku()">Verify Sku</button>
                     </div>
                     <div class="col-12">
                         <code id="errors"></code>
@@ -52,11 +53,11 @@
                 </div>
 
                 <hr>
-                <h3>Step 3, import attributes</h3>
+                <h3>Step 3, import attributes(option)</h3>
                 <div class="row">
                     <div class="col-12">
                         <button class="btn btn-primary" onclick="importAttr()">import attributes</button>
-                        <button class="btn btn-primary" onclick="delIndex()">delete index(option)</button>
+                        <button class="btn btn-primary" onclick="delIndex()">delete index</button>
                     </div>
                 </div>
 
@@ -77,57 +78,117 @@
             </div>
 
 
+            <!-- Modal -->
+            <div class="modal fade" id="exampleModal">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-body">
+                            Loading...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
 
         </div>
         {% script "/js/jquery-3.3.1.min.js" %}
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 
         <script type="text/javascript">
          var csrfToken = "{{csrf-token}}";
         </script>
 
-        <script>
+        <script type="text/javascript">
+
          function getFileName() {
            var val = $('input[name=filename]:checked').val()
            if (val) {
              return val
            }
-           alert('请选择文件')
+           alert('please select file')
          }
 
          function defaultPost(url, handler) {
            return () => {
              var filename = getFileName()
              if (filename) {
-               $.post(url, {"__anti-forgery-token": csrfToken, filename: filename}, handler, 'json')
+               $('#exampleModal').modal()
+               $.post(url, {"__anti-forgery-token": csrfToken, filename: filename},
+               (resp) => {
+                 $('#exampleModal').modal("hide")
+                 console.log(resp)
+                 if (resp['error_msg']) {
+                    alert(resp['error_msg'])
+                    return
+                 }
+                 handler(resp)
+               },
+               'json')
              }
            }
          }
 
-         const verify = defaultPost('/arikami/verify', (rs) => {
-           console.log(rs)
-         })
-
          const importAttr = defaultPost('/arikami/importAttr', (rs) => {
            console.log(rs)
          })
+
+         const verifyImages = () => {
+           const post = defaultPost('/arikami/verifyImages', (rs) => {
+             let error = ""
+             if (rs['error-images'] && rs['error-images'].length > 0) {
+               error = "error images:" + "<br>"
+               error += rs['error-images'].join("<br>")
+             }
+             $('#errors').html(error)
+           })
+
+           post()
+         }
+
+         const verifySku = () => {
+
+           const post = defaultPost('/arikami/verifySku', (rs) => {
+             let error = ""
+             if (rs['error-sku'] && rs['error-sku'].length > 0) {
+               error += "duplicate sku:" + "\n"
+               error += rs['error-sku'].join("\n")
+             }
+             $('#errors').html(error)
+           })
+
+           post()
+         }
 
          const delIndex = defaultPost('/arikami/delIndex', (rs) => {
            console.log(rs)
          })
 
          const mainCsv = defaultPost('/arikami/mainCsv', (rs) => {
+           if (rs['path']) {
+             window.open('/file/' + rs['path'], '_blank');
+           }
            console.log(rs)
          })
 
          const frCsv = defaultPost('/arikami/frCsv', (rs) => {
+           if (rs['path']) {
+             window.open('/file/' + rs['path'], '_blank');
+           }
            console.log(rs)
          })
 
          const esCsv = defaultPost('/arikami/esCsv', (rs) => {
+           if (rs['path']) {
+             window.open('/file/' + rs['path'], '_blank');
+           }
            console.log(rs)
          })
 
          const deCsv = defaultPost('/arikami/deCsv', (rs) => {
+           if (rs['path']) {
+             window.open('/file/' + rs['path'], '_blank');
+           }
            console.log(rs)
          })
 

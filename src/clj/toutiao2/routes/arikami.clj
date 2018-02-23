@@ -12,7 +12,8 @@
            [java.nio.file Files LinkOption]
            [java.nio.file.attribute BasicFileAttributes]))
 
-(def upload-path (io/resource "public/upload"))
+(def upload-path (-> env :upload-path))
+
 
 (defn file-attributes [file]
   "Return the file BasicFileAttributes of file.  File can be a file or a string
@@ -23,7 +24,7 @@
 
 (defn upload-file-name []
   (map #(.getName %)
-       (-> upload-path
+       (some-> upload-path
            (clojure.java.io/file)
            (file-seq)
            (->> (filter #(str/ends-with? (.getName %) ".xlsx"))
@@ -45,19 +46,28 @@
     (io/copy tempfile (io/file (file-path path filename)))))
 
 
-(defn verify [filename]
+
+(defn verifyImages [filename]
   (try
-    (let [data (-> (str upload-path "/" filename)
+    (let [data (-> (file-path upload-path filename)
                    (utils/read-excel->map "upload_template"))
           rs {:error-images (->> data
                                  (mapcat #(str/split (:image %) #";"))
                                  (set)
                                  (tools/verify-urls)
-                                 (remove nil?))
-              :error-sku (->> data
+                                 (remove nil?))}]
+      (response/ok rs))
+    (catch Exception e
+      {:error-msg "file content error"})))
+
+(defn verifySku [filename]
+  (try
+    (let [data (-> (file-path upload-path filename)
+                   (utils/read-excel->map "upload_template"))
+          rs {:error-sku (->> data
                               (tools/verify-sku)
                               (remove nil?))}]
-      rs)
+      (response/ok rs))
     (catch Exception e
       {:error-msg "file content error"})))
 
@@ -69,7 +79,7 @@
     (catch Exception e
       {:error-msg "file content error"})))
 
-(defn delIndex [filename]
+(defn delIndex [_]
   (try
     (tools/delIndex)
     (catch Exception e
@@ -79,7 +89,8 @@
   (try
     (let [data (-> (str upload-path "/" filename)
                    (utils/read-excel->map "upload_template"))]
-      (tools/do-all-data-logic data (str upload-path "data-main.csv") tools/convert-data))
+      (tools/do-all-data-logic data (str upload-path "/" "data-main.csv") tools/convert-data)
+      (response/ok {:path "data-main.csv"}))
     (catch Exception e
       {:error-msg "file content error"})))
 
@@ -87,7 +98,8 @@
   (try
     (let [data (-> (str upload-path "/" filename)
                    (utils/read-excel->map "upload_template"))]
-      (tools/do-all-data-logic data (str upload-path "data-fr.csv") tools/fr-data))
+      (tools/do-all-data-logic data (str upload-path "/" "data-fr.csv") tools/fr-data)
+      (response/ok {:path "data-fr.csv"}))
     (catch Exception e
       {:error-msg "file content error"})))
 
@@ -95,7 +107,8 @@
   (try
     (let [data (-> (str upload-path "/" filename)
                    (utils/read-excel->map "upload_template"))]
-      (tools/do-all-data-logic data (str upload-path "data-es.csv") tools/es-data))
+      (tools/do-all-data-logic data (str upload-path "/" "data-es.csv") tools/es-data)
+      (response/ok {:path "data-es.csv"}))
     (catch Exception e
       {:error-msg "file content error"})))
 
@@ -103,17 +116,33 @@
   (try
     (let [data (-> (str upload-path "/" filename)
                    (utils/read-excel->map "upload_template"))]
-      (tools/do-all-data-logic data (str upload-path "data-de.csv") tools/de-data))
+      (tools/do-all-data-logic data (str upload-path "/" "data-de.csv") tools/de-data)
+      (response/ok {:path "data-de.csv"}))
     (catch Exception e
       {:error-msg "file content error"})))
 
 
-
 (defroutes arikami-routes
-  (GET "/arikami/import" []
-       (import-page))
-  (POST "/arikami/upload-file" [excelfile]
-        (upload-file upload-path excelfile)
-        (response/found "/arikami/import"))
-  (POST "/arikami/verify" [filename]
-        (verify filename)))
+           (GET "/arikami/import" []
+             (import-page))
+           (POST "/arikami/upload-file" [excelfile]
+             (upload-file upload-path excelfile)
+             (response/found "/arikami/import"))
+           (POST "/arikami/verifyImages" [filename]
+             (verifyImages filename))
+           (POST "/arikami/verifySku" [filename]
+             (verifySku filename))
+           (POST "/arikami/importAttr" [filename]
+             (importAttr filename))
+           (POST "/arikami/delIndex" [filename]
+             (delIndex filename))
+           (POST "/arikami/mainCsv" [filename]
+             (mainCsv filename))
+           (POST "/arikami/frCsv" [filename]
+             (frCsv filename))
+           (POST "/arikami/esCsv" [filename]
+             (esCsv filename))
+           (POST "/arikami/deCsv" [filename]
+             (deCsv filename))
+           (GET "/file/:filename" [filename]
+             (response/file-response (str upload-path "/" filename))))

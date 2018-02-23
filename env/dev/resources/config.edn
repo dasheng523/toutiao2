@@ -5,4 +5,5 @@
  :authorize-uri "https://api.twitter.com/oauth/authenticate"
  :port 3000
  ;; when :nrepl-port is set the application starts the nREPL server on load
- :nrepl-port 7000}
+ :nrepl-port 7000
+ :upload-path "g:/listdata"}

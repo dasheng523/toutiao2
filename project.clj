@@ -53,6 +53,7 @@
                  [prismatic/schema "1.1.7"]                 ; 验证库
                  [com.hankcs/hanlp "portable-1.5.3"]        ; 自然语言库
                  [mysql/mysql-connector-java "5.1.34"]      ; mysql
+                 [javax.xml.bind/jaxb-api "2.2.8"]
                  #_[opencv/opencv "3.3.1"]
                  #_[opencv/opencv-native "3.3.1"]]
 
