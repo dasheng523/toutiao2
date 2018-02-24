@@ -242,6 +242,7 @@
 
 (defn fr-data [data _]
   (merge empty-product-info
+         default-product-info
          {:name (:name_fr data)
           :sku (:sku data)
           :store_view_code "french"
@@ -251,6 +252,7 @@
 
 (defn es-data [data _]
   (merge empty-product-info
+         default-product-info
          {:name (:name_es data)
           :sku (:sku data)
           :store_view_code "spanish"
@@ -260,6 +262,7 @@
 
 (defn de-data [data _]
   (merge empty-product-info
+         default-product-info
          {:name (:name_de data)
           :sku (:sku data)
           :store_view_code "spanish"
@@ -350,7 +353,6 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; verify ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defn sub-coll [coll start end]
   (-> (into [] coll)
       (subvec start end)))

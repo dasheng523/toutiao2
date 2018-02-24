@@ -17,3 +17,7 @@ lein migratus create add-users-table
 ```
 lein run migrate
 ```
+
+lein new luminus toutiao2 +re-frame +jetty +h2 +swagger +service +cider
+
+lein new luminus toutiao2 +jetty +h2 +re-frame +swagger +service +auth +oauth +cider +cucumber +sassc +kibit
