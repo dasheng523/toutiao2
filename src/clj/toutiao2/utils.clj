@@ -147,3 +147,6 @@
 
 (defn copy-file [source-path dest-path]
   (io/copy (io/file source-path) (io/file dest-path)))
+
+(defn current-time []
+  (quot (System/currentTimeMillis) 1000))
