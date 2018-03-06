@@ -306,7 +306,7 @@
 (defn replace-variation [data]
   (if (and (= (:product_type (first data)) "configurable")
            (> (count data) 2))
-    (let [subrs (-> (subvec (vec data) 2)
+    (let [subrs (-> (subvec (vec data) 1)
                     (->> (map (fn [item]
                                 (if-not (empty? (:additional_attributes item))
                                   (str "sku=" (:sku item) "," (:additional_attributes item))
@@ -321,6 +321,7 @@
   [target-list]
   (let [group-data (group-by #(-> % :sku (str/split #"-") first) target-list)]
     (mapcat (comp replace-variation replace-attributes) (vals group-data))))
+
 
 
 
@@ -387,8 +388,14 @@
     (db/delete-all-category-index db/arikami-test-db)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; main ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-#_(def excel-data (utils/read-excel->map "G:/listdata/upload_template-1228-v2111.xlsx" "upload_template"))
-#_(def new-excel-data (utils/read-excel->map "G:\\二次产品\\二次产品-改-v2.xlsx" "Sheet1"))
+#_(def excel-data (utils/read-excel->map "G:/listdata/product3upload.xlsx" "upload_template"))
+
+#_(-> (map #(-> (convert-data % excel-data) create-magento-product)
+           (-> excel-data (->> (map trim-map-val))))
+      (remove-duplicate-attribute)
+      (->> (map #(:configurable_variations %))))
+
+
 
 ; 校验图片存在
 #_(verify-urls (set (mapcat #(str/split (:image %) #";") excel-data)))
