@@ -80,20 +80,24 @@
 (defn importAttr [filename]
   (with-try
     (let [data (getExcelData filename)]
-      (tools/init-attribute-options (tools/attribute-dataset data)))))
+      (tools/import-attribute-options (tools/attribute-dataset data))
+      (response/ok {:state :success}))))
 
 (defn importAttrTest [filename]
   (with-try
     (let [data (getExcelData filename)]
-      (tools/init-attribute-options (tools/attribute-dataset data) "test"))))
+      (tools/import-attribute-options (tools/attribute-dataset data) "test")
+      (response/ok {:state :success}))))
 
 (defn delIndex [_]
   (with-try
-    (tools/delIndex "prod")))
+    (tools/delIndex "prod")
+    (response/ok {:state :success})))
 
 (defn delIndexTest [_]
   (with-try
-    (tools/delIndex "test")))
+    (tools/delIndex "test")
+    (response/ok {:state :success})))
 
 (defn csvHandler [convert-format target-name]
   (fn [filename]
@@ -123,7 +127,7 @@
   (POST "/arikami/delIndex" [filename]
         (delIndex filename))
   (POST "/arikami/importAttrTest" [filename]
-        (importAttr-test filename))
+        (importAttrTest filename))
   (POST "/arikami/delIndexTest" [filename]
         (delIndexTest filename))
   (POST "/arikami/mainCsv" [filename]
