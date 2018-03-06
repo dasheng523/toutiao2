@@ -387,7 +387,7 @@
     (db/delete-all-category-index db/arikami-test-db)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; main ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def excel-data (utils/read-excel->map "G:/listdata/upload_template-1228-v2111.xlsx" "upload_template"))
+#_(def excel-data (utils/read-excel->map "G:/listdata/upload_template-1228-v2111.xlsx" "upload_template"))
 #_(def new-excel-data (utils/read-excel->map "G:\\二次产品\\二次产品-改-v2.xlsx" "Sheet1"))
 
 ; 校验图片存在
