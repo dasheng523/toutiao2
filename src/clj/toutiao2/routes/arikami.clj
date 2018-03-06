@@ -73,7 +73,7 @@
           rs {:error-images (->> data
                                  (mapcat #(str/split (:image %) #";"))
                                  (set)
-                                 (tools/verify-urls)
+                                 (tools/verify-files)
                                  (remove nil?))}]
       (response/ok rs))))
 
@@ -82,9 +82,18 @@
     (let [data (getExcelData filename)]
       (tools/init-attribute-options (tools/attribute-dataset data)))))
 
+(defn importAttrTest [filename]
+  (with-try
+    (let [data (getExcelData filename)]
+      (tools/init-attribute-options (tools/attribute-dataset data) "test"))))
+
 (defn delIndex [_]
   (with-try
-    (tools/delIndex)))
+    (tools/delIndex "prod")))
+
+(defn delIndexTest [_]
+  (with-try
+    (tools/delIndex "test")))
 
 (defn csvHandler [convert-format target-name]
   (fn [filename]
@@ -94,9 +103,9 @@
         (response/ok {:path target-name})))))
 
 (def mainCsv (csvHandler tools/convert-data "data-main.csv"))
-(def frCsv (csvHandler tools/convert-data "data-fr.csv"))
-(def esCsv (csvHandler tools/convert-data "data-es.csv"))
-(def deCsv (csvHandler tools/convert-data "data-de.csv"))
+(def frCsv (csvHandler tools/fr-data "data-fr.csv"))
+(def esCsv (csvHandler tools/es-data "data-es.csv"))
+(def deCsv (csvHandler tools/de-data "data-de.csv"))
 
 
 (defroutes arikami-routes
@@ -113,6 +122,10 @@
         (importAttr filename))
   (POST "/arikami/delIndex" [filename]
         (delIndex filename))
+  (POST "/arikami/importAttrTest" [filename]
+        (importAttr-test filename))
+  (POST "/arikami/delIndexTest" [filename]
+        (delIndexTest filename))
   (POST "/arikami/mainCsv" [filename]
         (mainCsv filename))
   (POST "/arikami/frCsv" [filename]

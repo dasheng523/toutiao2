@@ -6,7 +6,10 @@
             [clj-http.client :as http]
             [clojure.spec.alpha :as s]
             [clojure.walk :as walk]
-            [ring.util.codec :as codec]))
+            [ring.util.codec :as codec]
+            [clojure.java.io :as io]
+            [clojure.set :as cset]
+            [toutiao2.config :refer [env]]))
 
 (def import-field
   [:use_config_max_sale_qty :description :thumbnail_image :bundle_sku_type :custom_design_from
@@ -336,19 +339,19 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; attribute ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-(defn init-attribute-options
+(defn import-attribute-options
   "生成属性值，会删除重建"
-  [dataset]
-  (for [[k coll] dataset]
-    (let [attr-id (k attribute-map)
-          exist-text (set (map :value (db/get-attribute-option-value attr-id)))
-          all-options (into exist-text (remove nil? coll))]
-      (println attr-id k)
-      (db/delete-attrubute-option attr-id)
-      (when-not (empty? all-options)
-        (db/insert-options attr-id all-options)))))
+  ([dataset conn]
+   (doseq [[k coll] dataset]
+     (when-not (empty? (remove nil? coll))
+       (let [attr-id (k attribute-map)
+             dbconn (if (= conn "test") db/arikami-test-db db/arikami-db)
+             exist-text (set (map :value (db/get-attribute-option-value attr-id dbconn)))
+             diff-options (cset/difference (set (remove nil? coll)) exist-text)]
+         (when-not (empty? diff-options)
+             (db/insert-options attr-id diff-options dbconn))))))
+  ([dataset]
+   (import-attribute-options dataset "prod")))
 
 
 
@@ -356,6 +359,13 @@
 (defn sub-coll [coll start end]
   (-> (into [] coll)
       (subvec start end)))
+
+(defn get-media-path []
+  (-> env :media-path))
+
+(defn verify-files [paths]
+  (let [exists-file #(.exists(io/as-file %))]
+    (remove nil? (pmap #(if (exists-file (str (get-media-path) %)) nil %) paths))))
 
 
 (defn verify-urls [urls]
@@ -371,11 +381,13 @@
   (map first
        (filter #(> (count (second %)) 1) (group-by :sku list))))
 
-(defn delIndex []
-  (db/delete-all-category-index))
+(defn delIndex [conn]
+  (if (= conn "prod")
+    (db/delete-all-category-index db/arikami-db)
+    (db/delete-all-category-index db/arikami-test-db)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; main ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-#_(def excel-data (utils/read-excel->map "G:\\二次产品\\第一次产品字段更新-v2.xlsx" "upload_template"))
+(def excel-data (utils/read-excel->map "G:/listdata/upload_template-1228-v2111.xlsx" "upload_template"))
 #_(def new-excel-data (utils/read-excel->map "G:\\二次产品\\二次产品-改-v2.xlsx" "Sheet1"))
 
 ; 校验图片存在
@@ -386,8 +398,7 @@
 #_(verify-sku new-excel-data)
 
 ; 导入属性值
-#_(init-attribute-options (attribute-dataset excel-data))
-#_(init-attribute-options (attribute-dataset new-excel-data))
+#_(import-attribute-options (attribute-dataset excel-data) "test")
 
 ; 删除index(可选)
 #_(db/delete-all-category-index)

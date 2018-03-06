@@ -55,6 +55,12 @@ insert into `eav_attribute_option`
 (`attribute_id`, `sort_order`)
 values (:attribute_id, :sort_order)
 
+-- :name get-last-attribute-option :? :1
+select *
+from `eav_attribute_option`
+order by option_id desc
+limit 1
+
 -- :name insert-attribute-option-tuple :i!
 insert into `eav_attribute_option`
 (`attribute_id`, `sort_order`)
@@ -94,6 +100,9 @@ where option_id in (:v*:options)
 
 -- :name get-attribute-option-by-attrid :? :*
 SELECT * FROM `eav_attribute_option` where attribute_id=:attrid
+
+-- :name get-attribute-options-by-attrid-and-id :? :*
+select * from `eav_attribute_option` where attribute_id=:attrid and option_id > :id
 
 -- :name get-attribute-option-value-by-attrid :? :*
 select * from `eav_attribute_option_value`
