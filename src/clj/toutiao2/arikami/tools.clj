@@ -366,7 +366,7 @@
 
 (defn verify-files [paths]
   (let [exists-file #(.exists(io/as-file %))]
-    (remove nil? (pmap #(if (exists-file (str (get-media-path) %)) nil %) paths))))
+    (remove nil? (pmap #(if (exists-file (str (get-media-path) "/" %)) nil %) paths))))
 
 
 (defn verify-urls [urls]

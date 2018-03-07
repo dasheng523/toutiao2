@@ -5,5 +5,5 @@
  :authorize-uri "https://api.twitter.com/oauth/authenticate"
  :port 3000
  :upload-path "/usr/local/projects/media/clojure"
- :media-path "/usr/local/projects/media"
+ :media-path "/usr/local/projects/media/Products"
 }
