@@ -114,6 +114,11 @@
   (-> (get-attrs data)
       (maps->string-format)))
 
+
+(defn genereate-related-skus [data]
+  (str/replace (str (:related_skus data))  #";" ","))
+
+
 (defn generate-description
   ([data]
    (generate-description data :description_en))
@@ -230,7 +235,7 @@
             :meta_keywords (-> (name->url-key (get data :name_en "") (:sku data))
                                (str/replace #"-" ","))
             :meta_description (:meta_description data)
-            :short_description (if (:description_en data) (utils/trunc (:description_en data) 500))
+            :short_description (if (:description_en data) (utils/trunc (str (:description_en data)) 500))
             :additional_attributes (convert-addattr data)
             :configurable_variations (convert-configvar data list)
             :weight (* (:weight data) 1000)
@@ -239,6 +244,7 @@
                                  (not= (parent-product (:sku data) list) data))
                           "Not Visible Individually"
                           "Catalog, Search")
+            :related_skus (genereate-related-skus data)
             :url_key (name->url-key (get data :name_en "") (:sku data))}
            (convert-images data list))))
 
