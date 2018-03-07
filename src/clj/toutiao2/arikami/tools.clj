@@ -368,6 +368,12 @@
   (let [exists-file #(.exists(io/as-file %))]
     (remove nil? (pmap #(if (exists-file (str (get-media-path) %)) nil %) paths))))
 
+(defn check-data [list]
+  (let [data (map trim-map-val list)]
+    (when-not (s/valid? ::data-list data)
+      (-> (s/explain-data ::data-list data)
+          (get :clojure.spec.alpha/problems)
+          (->> (map #(get % :in)))))))
 
 (defn verify-urls [urls]
   (utils/async-do urls
@@ -388,13 +394,9 @@
     (db/delete-all-category-index db/arikami-test-db)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; main ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-#_(def excel-data (utils/read-excel->map "G:/listdata/product3upload.xlsx" "upload_template"))
+#_(def excel-data (utils/read-excel->map "G:/listdata/2.xlsx" "upload_template"))
 
-#_(-> (map #(-> (convert-data % excel-data) create-magento-product)
-           (-> excel-data (->> (map trim-map-val))))
-      (remove-duplicate-attribute)
-      (->> (map #(:configurable_variations %))))
-
+#_(println (check-data excel-data))
 
 
 ; 校验图片存在

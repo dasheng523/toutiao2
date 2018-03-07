@@ -77,6 +77,12 @@
                                  (remove nil?))}]
       (response/ok rs))))
 
+(defn checkExcel [filename]
+  (with-try
+    (let [data (getExcelData filename)
+          rs (tools/check-data data)]
+      (response/ok {:rs (map str rs)}))))
+
 (defn importAttr [filename]
   (with-try
     (let [data (getExcelData filename)]
@@ -122,6 +128,8 @@
         (verifyImages filename))
   (POST "/arikami/verifySku" [filename]
         (verifySku filename))
+  (POST "/arikami/checkExcel" [filename]
+        (checkExcel filename))
   (POST "/arikami/importAttr" [filename]
         (importAttr filename))
   (POST "/arikami/delIndex" [filename]

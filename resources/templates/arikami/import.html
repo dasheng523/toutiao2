@@ -19,185 +19,198 @@
         </style>
     </head>
     <body>
-      <div id="app">
-        <div class="container-fluid">
-          <h3>Step 1, select execel file</h3>
-          <div class="row">
-            <div class="col-6">
-              <form action="/arikami/upload-file" method="post" enctype="multipart/form-data">
-                <div class="form-group">
-                  <input type="file" class="form-control-file" name="excelfile">
+        <div id="app">
+            <div class="container-fluid">
+                <h3>Step 1, select execel file</h3>
+                <div class="row">
+                    <div class="col-6">
+                        <form action="/arikami/upload-file" method="post" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <input type="file" class="form-control-file" name="excelfile">
+                            </div>
+                            {% csrf-field %}
+                            <button type="submit" class="btn btn-primary">Upload</button>
+                        </form>
+                    </div>
+
+                    <div class="col-6">
+                        {% for item in filelist %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="filename" id="{{item}}" value="{{item}}">
+                            <label class="form-check-label" for="{{item}}">
+                                {{item}}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
-                {% csrf-field %}
-                <button type="submit" class="btn btn-primary">Upload</button>
-              </form>
+
+                <hr>
+                <h3>Step 2, verify excel file</h3>
+                <div class="row">
+                    <div class="col-12">
+                        <button class="btn btn-primary" onclick="commonCheck()">Common Check</button>
+                        <button class="btn btn-primary" onclick="verifyImages()">Verify Images</button>
+                        <button class="btn btn-primary" onclick="verifySku()">Verify Sku</button>
+                    </div>
+                    <div class="col-12">
+                        <code id="errors"></code>
+                    </div>
+                </div>
+
+                <hr>
+                <h3>Step 3, import attributes(option)</h3>
+                <div class="row">
+                    <div class="col-12">
+                        <button class="btn btn-primary" onclick="importAttr()">import attributes</button>
+                        <button class="btn btn-primary" onclick="delIndex()">delete index</button>
+                        <button class="btn btn-primary" onclick="importAttrTest()">import attributes Test</button>
+                        <button class="btn btn-primary" onclick="delIndexTest()">delete index Test</button>
+                    </div>
+                </div>
+
+                <hr>
+                <h3>Step 4, download csv</h3>
+                <div class="row">
+                    <div class="col-12">
+                        <button class="btn btn-primary" onclick="mainCsv()">main csv</button>
+                        <button class="btn btn-primary" onclick="frCsv()">fr csv</button>
+                        <button class="btn btn-primary" onclick="esCsv()">es csv</button>
+                        <button class="btn btn-primary" onclick="deCsv()">de csv</button>
+                    </div>
+                </div>
+
+                <hr>
+                <h3>Step 5, import csv in magento2</h3>
+                <h3>Step 6, rebuild index, flush cache</h3>
             </div>
 
-            <div class="col-6">
-              {% for item in filelist %}
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="filename" id="{{item}}" value="{{item}}">
-                <label class="form-check-label" for="{{item}}">
-                  {{item}}
-                </label>
-              </div>
-              {% endfor %}
+            <div class="msg-bg hide">
+                <div class="msg-box">
+                    Loadding...
+                </div>
             </div>
-          </div>
 
-          <hr>
-          <h3>Step 2, verify excel file</h3>
-          <div class="row">
-            <div class="col-12">
-              <button class="btn btn-primary" onclick="verifyImages()">Verify Images(will take long time)</button>
-              <button class="btn btn-primary" onclick="verifySku()">Verify Sku</button>
-            </div>
-            <div class="col-12">
-              <code id="errors"></code>
-            </div>
-          </div>
 
-          <hr>
-          <h3>Step 3, import attributes(option)</h3>
-          <div class="row">
-            <div class="col-12">
-              <button class="btn btn-primary" onclick="importAttr()">import attributes</button>
-              <button class="btn btn-primary" onclick="delIndex()">delete index</button>
-              <button class="btn btn-primary" onclick="importAttrTest()">import attributes Test</button>
-              <button class="btn btn-primary" onclick="delIndexTest()">delete index Test</button>
-            </div>
-          </div>
-
-          <hr>
-          <h3>Step 4, download csv</h3>
-          <div class="row">
-            <div class="col-12">
-              <button class="btn btn-primary" onclick="mainCsv()">main csv</button>
-              <button class="btn btn-primary" onclick="frCsv()">fr csv</button>
-              <button class="btn btn-primary" onclick="esCsv()">es csv</button>
-              <button class="btn btn-primary" onclick="deCsv()">de csv</button>
-            </div>
-          </div>
-
-          <hr>
-          <h3>Step 5, import csv in magento2</h3>
-          <h3>Step 6, rebuild index, flush cache</h3>
         </div>
+        {% script "/js/jquery-3.3.1.min.js" %}
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 
-        <div class="msg-bg hide">
-            <div class="msg-box">
-                Loadding...
-            </div>
-        </div>
+        <script type="text/javascript">
+         var csrfToken = "{{csrf-token}}";
+        </script>
 
+        <script type="text/javascript">
 
-      </div>
-      {% script "/js/jquery-3.3.1.min.js" %}
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-
-    <script type="text/javascript">
-     var csrfToken = "{{csrf-token}}";
-    </script>
-
-    <script type="text/javascript">
-
-     function getFileName() {
-         var val = $('input[name=filename]:checked').val()
-         if (val) {
-             return val
+         function getFileName() {
+             var val = $('input[name=filename]:checked').val()
+             if (val) {
+                 return val
+             }
+             alert('please select file')
          }
-         alert('please select file')
-     }
 
-     function defaultPost(url, handler) {
-         return () => {
-             var filename = getFileName()
-             if (filename) {
-                 $('.msg-bg').removeClass('hide')
-                 $.post(url, {"__anti-forgery-token": csrfToken, filename: filename},
-                        (resp) => {
-                            $('.msg-bg').addClass('hide')
-                            console.log(resp)
-                            if (resp['error_msg']) {
-                                alert(resp['error_msg'])
-                                return
-                            }
-                            handler(resp)
-                        },
-                        'json')
+         function defaultPost(url, handler) {
+             return () => {
+                 var filename = getFileName()
+                 if (filename) {
+                     $('.msg-bg').removeClass('hide')
+                     $.post(url, {"__anti-forgery-token": csrfToken, filename: filename},
+                            (resp) => {
+                                $('.msg-bg').addClass('hide')
+                                console.log(resp)
+                                if (resp['error_msg']) {
+                                    alert(resp['error_msg'])
+                                    return
+                                }
+                                handler(resp)
+                            },
+                            'json')
+                 }
              }
          }
-     }
 
-     const importAttr = defaultPost('/arikami/importAttr', (rs) => {
-         alert('success')
-     })
-     const importAttrTest = defaultPost('/arikami/importAttrTest', (rs) => {
-         alert('success')
-     })
-
-     const verifyImages = () => {
-         const post = defaultPost('/arikami/verifyImages', (rs) => {
-             let error = ""
-             if (rs['error-images'] && rs['error-images'].length > 0) {
-                 error = "error images:" + "<br>"
-                 error += rs['error-images'].join("<br>")
-             }
-             $('#errors').html(error)
+         const importAttr = defaultPost('/arikami/importAttr', (rs) => {
+             alert('success')
+         })
+         const importAttrTest = defaultPost('/arikami/importAttrTest', (rs) => {
+             alert('success')
          })
 
-         post()
-     }
+         const verifyImages = () => {
+             const post = defaultPost('/arikami/verifyImages', (rs) => {
+                 let error = ""
+                 if (rs['error-images'] && rs['error-images'].length > 0) {
+                     error = "error images:" + "<br>"
+                     error += rs['error-images'].join("<br>")
+                 }
+                 $('#errors').html(error)
+             })
 
-     const verifySku = () => {
-         const post = defaultPost('/arikami/verifySku', (rs) => {
-             let error = ""
-             if (rs['error-sku'] && rs['error-sku'].length > 0) {
-                 error += "duplicate sku:" + "\n"
-                 error += rs['error-sku'].join("\n")
-             }
-             $('#errors').html(error)
+             post()
+         }
+
+         const commonCheck = ()=> {
+             const post = defaultPost('/arikami/checkExcel', (rs) => {
+                 let error = ""
+                 if (rs['rs'] && rs['rs'].length > 0) {
+                     error += rs['rs'].join("<br>")
+                 }
+                 $('#errors').html(error)
+             })
+
+             post()
+         }
+
+         const verifySku = () => {
+             const post = defaultPost('/arikami/verifySku', (rs) => {
+                 let error = ""
+                 if (rs['error-sku'] && rs['error-sku'].length > 0) {
+                     error += "duplicate sku:" + "\n"
+                     error += rs['error-sku'].join("\n")
+                 }
+                 $('#errors').html(error)
+             })
+
+             post()
+         }
+
+         const delIndex = defaultPost('/arikami/delIndex', (rs) => {
+             alert('success')
          })
 
-         post()
-     }
+         const delIndexTest = defaultPost('/arikami/delIndexTest', (rs) => {
+             alert('success')
+         })
 
-     const delIndex = defaultPost('/arikami/delIndex', (rs) => {
-         alert('success')
-     })
+         const mainCsv = defaultPost('/arikami/mainCsv', (rs) => {
+             if (rs['path']) {
+                 window.open('/file/' + rs['path'], '_blank');
+             }
+             alert('success')
+         })
 
-     const delIndexTest = defaultPost('/arikami/delIndexTest', (rs) => {
-         alert('success')
-     })
+         const frCsv = defaultPost('/arikami/frCsv', (rs) => {
+             if (rs['path']) {
+                 window.open('/file/' + rs['path'], '_blank');
+             }
+             alert('success')
+         })
 
-     const mainCsv = defaultPost('/arikami/mainCsv', (rs) => {
-         if (rs['path']) {
-             window.open('/file/' + rs['path'], '_blank');
-         }
-         alert('success')
-     })
+         const esCsv = defaultPost('/arikami/esCsv', (rs) => {
+             if (rs['path']) {
+                 window.open('/file/' + rs['path'], '_blank');
+             }
+             alert('success')
+         })
 
-     const frCsv = defaultPost('/arikami/frCsv', (rs) => {
-         if (rs['path']) {
-             window.open('/file/' + rs['path'], '_blank');
-         }
-         alert('success')
-     })
+         const deCsv = defaultPost('/arikami/deCsv', (rs) => {
+             if (rs['path']) {
+                 window.open('/file/' + rs['path'], '_blank');
+             }
+             alert('success')
+         })
 
-     const esCsv = defaultPost('/arikami/esCsv', (rs) => {
-         if (rs['path']) {
-             window.open('/file/' + rs['path'], '_blank');
-         }
-         alert('success')
-     })
-
-     const deCsv = defaultPost('/arikami/deCsv', (rs) => {
-         if (rs['path']) {
-             window.open('/file/' + rs['path'], '_blank');
-         }
-         alert('success')
-     })
-
-    </script>
+        </script>
     </body>
 </html>
