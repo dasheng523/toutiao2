@@ -238,7 +238,7 @@
             :short_description (if (:description_en data) (utils/trunc (str (:description_en data)) 500))
             :additional_attributes (convert-addattr data)
             :configurable_variations (convert-configvar data list)
-            :weight (* (:weight data) 1000)
+            :weight (* (:weight data) 1)
             :visibility (if (and (= (get data :product_type) "simple")
                                  (parent-product (:sku data) list)
                                  (not= (parent-product (:sku data) list) data))
