@@ -91,7 +91,7 @@
     {:file-pattern #"\.(scss|sass)$"
      :paths ["resources/scss"]}}
 
-  :hooks [leiningen.sassc]
+;;  :hooks [leiningen.sassc]
   :uberwar
   {:handler toutiao2.handler/app
    :init toutiao2.handler/init

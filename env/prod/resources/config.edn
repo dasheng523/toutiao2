@@ -6,4 +6,5 @@
  :port 3000
  :upload-path "/usr/local/projects/media/clojure"
  :media-path "/usr/local/projects/media/Products"
+ :database-url "jdbc:mysql://127.0.0.1/shop?user=root&password=90rCtS32gNg*y"
 }

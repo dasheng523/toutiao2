@@ -8,4 +8,5 @@
  :nrepl-port 7000
  :upload-path "g:/listdata"
  :media-path "g:/listdata"
+ :database-url "jdbc:mysql://127.0.0.1/shop?user=root&password=a5235013"
 }
