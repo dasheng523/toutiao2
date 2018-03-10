@@ -21,10 +21,10 @@
 
 (def ones (cons 1 (lazy-seq ones)))
 
-(take 5 ones)
+;(take 5 ones)
 
 (def ss (stream-withdraw 1000 ones))
 
-(take 5 ss)
+;(take 5 ss)
 
 
