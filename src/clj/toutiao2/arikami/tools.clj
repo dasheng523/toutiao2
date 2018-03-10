@@ -9,6 +9,7 @@
             [ring.util.codec :as codec]
             [clojure.java.io :as io]
             [clojure.set :as cset]
+            [clojure.java.shell :as shell]
             [toutiao2.config :refer [env]]))
 
 (def import-field
@@ -398,6 +399,18 @@
   (if (= conn "prod")
     (db/delete-all-category-index db/arikami-db)
     (db/delete-all-category-index db/arikami-test-db)))
+
+(defn reIndex [mode]
+  (let [dir (if (= mode "test")
+              (-> env :arikami-test-root)
+              (-> env :arikami-root))]
+    (shell/sh "php" "bin/magento" "indexer:reindex" :dir dir)))
+
+(defn flush-cache [mode]
+  (let [dir (if (= mode "test")
+              (-> env :arikami-test-root)
+              (-> env :arikami-root))]
+    (shell/sh "php" "bin/magento" "cache:flush" :dir dir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; main ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #_(def excel-data (utils/read-excel->map "G:/listdata/2.xlsx" "upload_template"))

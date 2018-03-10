@@ -100,9 +100,29 @@
     (tools/delIndex "prod")
     (response/ok {:state :success})))
 
+(defn reIndex [_]
+  (with-try
+    (tools/reIndex "prod")
+    (response/ok {:state :success})))
+
+(defn flushCache [_]
+  (with-try
+    (tools/flush-cache "prod")
+    (response/ok {:state :success})))
+
 (defn delIndexTest [_]
   (with-try
     (tools/delIndex "test")
+    (response/ok {:state :success})))
+
+(defn reIndexTest [_]
+  (with-try
+    (tools/reIndex "test")
+    (response/ok {:state :success})))
+
+(defn flushCacheTest [_]
+  (with-try
+    (tools/flush-cache "test")
     (response/ok {:state :success})))
 
 (defn csvHandler [convert-format target-name]
@@ -146,5 +166,13 @@
         (esCsv filename))
   (POST "/arikami/deCsv" [filename]
         (deCsv filename))
+  (POST "/arikami/reindex" [filename]
+        (reIndex filename))
+  (POST "/arikami/reindextest" [filename]
+        (reIndexTest filename))
+  (POST "/arikami/flushcache" [filename]
+        (flushCache filename))
+  (POST "/arikami/flushcacheTest" [filename]
+        (flushCacheTest filename))
   (GET "/file/:filename" [filename]
        (response/file-response (str (get-upload-path) "/" filename))))

@@ -7,4 +7,6 @@
  :upload-path "/usr/local/projects/media/clojure"
  :media-path "/usr/local/projects/media/Products"
  :database-url "jdbc:mysql://127.0.0.1/shop?user=root&password=90rCtS32gNg*y"
+ :arikami-root "/usr/local/projects/arikami.com"
+ :arikami-test-root "/usr/local/projects/test.arikami.com"
 }
