@@ -382,14 +382,6 @@
           (get :clojure.spec.alpha/problems)
           (->> (map #(get % :in)))))))
 
-(defn verify-urls [urls]
-  (utils/async-do urls
-            #(try
-               (if (not= (:status (http/head (str "http://www.arikami.com/media/Products/" %))) 200)
-                 %)
-               (catch Exception e
-                 %))
-            10))
 
 (defn verify-sku [list]
   (map first
@@ -419,8 +411,7 @@
 
 
 ; 校验图片存在
-#_(verify-urls (set (mapcat #(str/split (:image %) #";") excel-data)))
-#_(verify-urls (set (mapcat #(str/split (:image %) #";") new-excel-data)))
+#_(verify-files (set (mapcat #(str/split (:image %) #";") new-excel-data)))
 ; 校验SKU
 #_(verify-sku excel-data)
 #_(verify-sku new-excel-data)

@@ -10,6 +10,12 @@
  :upload-path "/Users/huangyesheng/Downloads"
  :media-path "g:/listdata"
  :database-url "jdbc:mysql://127.0.0.1/shop?user=root&password=a5235013"
+ :database-spec {:adapter            "mysql"
+                 :username           "root"
+                 :password           "a5235013"
+                 :database-name      "shop"
+                 :server-name        "127.0.0.1"
+                 :port-number        3306}
  :arikami-root "/Users/huangyesheng/Documents/project/arikami.com"
  :arikami-test-root "/Users/huangyesheng/Documents/project/arikami.com"
 }

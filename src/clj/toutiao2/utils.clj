@@ -5,7 +5,10 @@
             [clojure.data.csv :as csv]
             [clojure.java.io :as io]
             [clojure.string :as str]
-            [net.cgrand.enlive-html :as enlive])
+            [net.cgrand.enlive-html :as enlive]
+            [flake.core :as flake]
+            [flake.utils :as flake-utils]
+            [digest :as digest])
   (:import (java.io StringReader)))
 
 
@@ -130,18 +133,6 @@
   (first (drop-while (comp not pred) list)))
 
 
-(defn async-do
-  "并行计算"
-  [list handler speed]
-  (let [numcount (quot (count list) speed)
-        parts (partition numcount numcount [] list)
-        futurelist (map #(future (map (fn [item] (handler item)) %))
-                        parts)]
-    (apply concat (map (fn [n] @n) futurelist))
-    #_(doseq [part parts]
-      (future (doseq [item part] (handler item))))))
-
-
 (defn replace-in-list [coll n x]
   (concat (take n coll) (list x) (nthnext coll (inc n))))
 
@@ -150,3 +141,25 @@
 
 (defn current-time []
   (quot (System/currentTimeMillis) 1000))
+
+(defn md5 [s]
+  (digest/md5 s))
+
+(defn sha-256 [file]
+  (digest/sha-256 file))
+
+(defn rand-string
+  "生成随机字符串，但不是唯一的"
+  ([] (rand-string 8))
+  ([n]
+   (let [chars (map char (range 33 127))
+         password (take n (repeatedly #(rand-nth chars)))]
+     (reduce str password))))
+
+(defn rand-idstr
+  "生成随机字符串，唯一的"
+  []
+  (->> (repeatedly flake/generate!)
+       first
+       flake/flake->bigint
+       flake-utils/base62-encode))
