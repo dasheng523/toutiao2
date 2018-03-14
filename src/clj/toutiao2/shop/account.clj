@@ -69,11 +69,90 @@
          (encrypt password (:seed account))))
 
 
-(defmacro defabc [name ])
+(defmacro defabc1
+  [name & [p & f]]
+  `(def ~name (fn ~@p ~@f)))
 
-(defabc abc
+(defmacro defabc2
+  [fname & forms]
+  (let [fns (reduce (fn [m [p & f]]
+                      (let [pk (map keyword p)]
+                        (assoc m (set pk) [(vec pk) `(fn ~p ~@f)]))
+                      )
+                    {}
+                    forms)]
+    `(def ~fname (fn [m#]
+                   (if-let [ks# (->> m# keys set)]
+                     (apply (second (get ~fns ks#))
+                            (map (fn [v#] (get m# v#))
+                                 (->> (get ~fns ks#) first))))
+                   #_(let [ks (->> m# keys (map #(-> % name symbol)))]
+                     ks)
+                 #_(let [ks (map #(-> % name symbol) (keys m))
+                         vfn (get ~fns (set ks))]
+                     (second vfn))))))
+
+
+(defabc2 ttt
   ([a b] (+ a b))
-  ([b d] (- b d)))
+  ([a c] (- a c)))
+
+(ttt {:a 1 :c 3})
+
+(macroexpand-1 '(defabc2 ttt
+                  ([a b] (+ a b))
+                  ([a c] (- a c))))
+
+
+
+(defmacro sss [name]
+  `(def ~name (fn [m#] (+ 1 2))))
+
+
+(sss cc)
+(cc 1)
+
+(fn [a b] {'#{a b} 1})
+
+(ttt 1 2)
+
+
+(=
+ (map #(-> % name symbol) [:a :b])
+ '(a b))
+
+
+(symbol (name :a))
+
+(defn aaa []
+  (let [fn1 (fn [a b] (+ a b))
+        fn2 (fn [a b] (- a b))
+        a1 '[a b]
+        a2 '[a c]
+        mm {'[a b] (fn [a b] (+ a b)),
+            '[a c] (fn [a c] (- a c))}
+        p1 (->> a1 (map name) (set))
+        p2 (->> a2 (map name) (set))]
+    (fn [m]
+      (let [ks (->> m keys set)]
+        (condp = ks
+          p1 (apply fn1 (map #(get m %) (map keyword a1)))
+          p2 (apply fn2 (map #(get m %) (map keyword a2)))
+          (str "error"))))))
+
+((aaa) {:b 1 :a 2})
+
+
+(apply #(+ %1 %2) (map #(get {:a 1 :b 2} (keyword %)) `[a b]))
+
+(map keyword '[a b])
+{:a 1 :b 2}
+(->> `[a b] (map keyword))
+
+
+
+(= (map name [:a :b]) (map name `[a b]))
+
 
 (abc {:a 1 :b 2})  ;; = 3
 (abc {:b 2 :d 2})  ;; = 0
@@ -93,6 +172,5 @@
  (save-common-account!))
 
 #_(authenticate-common-account "test" "7788")
-
 
 
