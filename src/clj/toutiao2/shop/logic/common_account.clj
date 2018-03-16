@@ -1,26 +1,18 @@
-(ns toutiao2.shop.account
+(ns toutiao2.shop.logic.common-account
   (:require
-   [toutiao2.shop.db :refer :all]
+   [toutiao2.shop.logic.db :refer :all]
    [toutiao2.utils :as utils]
-   [toutiao2.shop.common :refer [defnmap]]
    [honeysql.helpers :refer :all :as helpers]
    [honeysql.core :as sql]
    [clojure.java.jdbc :as jdbc]
    [clojure.tools.logging :as log]))
-
-(defprotocol Account
-  (save [account])
-  (reset-password [accountt password]))
-
-(defprotocol AuthRequst
-  (authenticate [req]))
 
 (defn- encrypt
   "加密"
   [s seed]
   (utils/md5 (str s seed)))
 
-(defn- get-common-account-by-name
+(defn get-account-by-name
   "通过用户名获取普通账号"
   [username]
   (-> (select :*)
@@ -29,10 +21,10 @@
       (sql-query)
       (first)))
 
-(defn- authenticate-common-account
+(defn authenticate-account
   "普通的用户名密码类型的验证"
   [username password]
-  (if-let [account (get-common-account-by-name username)]
+  (if-let [account (get-account-by-name username)]
     (-> (select :id)
         (from :common_account)
         (where [:= :username username]
@@ -42,13 +34,13 @@
         (first))))
 
 
-(defn- save-common-account!
+(defn save-account!
   "保存授权账号"
   [account]
   (save-simple-data! :common_account account :username))
 
 
-(defn create-common-account
+(defn create-account
   "创建普通的授权账号"
   [{:keys [user_id username password is_active]
     :or {is_active true}}]
@@ -62,18 +54,9 @@
     ^{:type :common} account))
 
 
-(defn- change-password-common
+(defn change-password
   "更改密码"
   [account password]
   (assoc account
          :password
          (encrypt password (:seed account))))
-
-
-(defnmap authenticate
-  ([username password] (authenticate-common-account username password)))
-
-(defnmap create-account
-  ([user_id username password is_active] (create-common-account )))
-(authenticate {:username 111 :password 222})
-

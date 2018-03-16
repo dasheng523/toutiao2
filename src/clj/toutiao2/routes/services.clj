@@ -27,13 +27,19 @@
              :data {:info {:version "1.0.0"
                            :title "Sample API"
                            :description "Sample Services"}}}}
-  
+
   (GET "/authenticated" []
        :auth-rules authenticated?
        :current-user user
        (ok {:user user}))
   (context "/api" []
     :tags ["thingie"]
+
+    (GET "/test" []
+         :return       String
+         :query-params [x :- Long, {y :- Long 1}]
+         :summary      "x+y with query-parameters. y defaults to 1."
+         (ok "你好"))
 
     (GET "/plus" []
       :return       Long

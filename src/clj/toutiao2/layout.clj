@@ -24,6 +24,7 @@
           :servlet-context *app-context*)))
     "text/html; charset=utf-8"))
 
+
 (defn error-page
   "error-details should be a map containing the following keys:
    :status - error status

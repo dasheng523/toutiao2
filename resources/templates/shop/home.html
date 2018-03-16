@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Shop Home</title>
+    </head>
+    <body>
+        <form method="post" action="/shop/login-post">
+            {% csrf-field %}
+            username: <input name="username" type="text" />
+            <br>
+            password: <input name="password" type="password" />
+            <br>
+            <input type="submit" value="登录"/>
+        </form>
+    </body>
+</html>

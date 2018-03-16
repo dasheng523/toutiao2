@@ -16,7 +16,8 @@
                             (map (fn [v#] (get m# v#))
                                  (->> (get ~fns ks#) first))))))))
 
-(defn defnmap
+
+#_(defn defnmap
   [fname & fns]
   (fn [m]
     (let [ks (-> m keys set)]
@@ -24,6 +25,6 @@
 
 
 
-(defnmap aaaa
+#_(defnmap aaaa
   ([:username :password] authenticate-common-account))
 

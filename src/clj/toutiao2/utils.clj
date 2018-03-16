@@ -163,3 +163,6 @@
        first
        flake/flake->bigint
        flake-utils/base62-encode))
+
+(defn list-functions [namespace]
+  (keys (ns-publics namespace)))

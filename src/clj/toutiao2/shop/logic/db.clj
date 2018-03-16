@@ -1,4 +1,4 @@
-(ns toutiao2.shop.db
+(ns toutiao2.shop.logic.db
   (:require
    [clojure.tools.logging :as log]
    [toutiao2.config :refer [env]]
@@ -6,7 +6,8 @@
    [mount.core :refer [defstate] :as mount]
    [clojure.java.jdbc :as jdbc]
    [honeysql.core :as sql]
-   [honeysql.helpers :refer :all :as helpers]))
+   [honeysql.helpers :refer :all :as helpers]
+   [clojure.string :as str]))
 
 (defstate shop-datasource
   :start (do
@@ -60,3 +61,14 @@
   ([data table]
    (save-simple-data! table data :id)))
 
+(defn ->dbmap [m]
+  (reduce (fn [col [k v]]
+            (assoc col (-> k name (str/replace #"-" "_") keyword) v)) {} m))
+
+(defmacro defget
+  "根据关键词批量创建get函数"
+  [ename ks]
+  (let [com (for [k ks]
+              (let [fname (symbol (str "get-" (name ename) "-" (name k)))]
+                `(def ~fname (fn [m#] (get m# ~k)))))]
+    `(do ~@com)))
