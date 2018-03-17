@@ -3,7 +3,7 @@
             [toutiao2.layout :refer [error-page]]
             [toutiao2.routes.home :refer [home-routes]]
             [toutiao2.routes.arikami :refer [arikami-routes]]
-            [toutiao2.shop.routes :refer [shop-routes shop-routes2]]
+            [toutiao2.shop.routes :refer [shop-routes]]
             [toutiao2.routes.services :refer [service-routes]]
             [toutiao2.routes.oauth :refer [oauth-routes]]
             [compojure.route :as route]
@@ -16,6 +16,7 @@
 (mount/defstate init-app
                 :start ((or (:init defaults) identity))
                 :stop  ((or (:stop defaults) identity)))
+
 
 (defn init
   "init will be called once when
@@ -46,7 +47,6 @@
     (-> #'shop-routes
         (wrap-routes middleware/wrap-csrf)
         (wrap-routes middleware/wrap-formats))
-    #'shop-routes2
     #'oauth-routes
     #'service-routes
     (route/not-found

@@ -144,7 +144,7 @@
                                  [doo "0.1.8"]
                                  [figwheel-sidecar "0.5.14"]
                                  [org.apache.httpcomponents/httpcore "4.4"]
-                                 [org.clojure/core.cache "0.6.3"]
+                                 [org.clojure/core.cache "0.7.1"]
                                  [org.seleniumhq.selenium/selenium-server "2.48.2" :exclusions [org.bouncycastle/bcprov-jdk15on org.bouncycastle/bcpkix-jdk15on]]]
                   :plugins      [[com.jakemccrary/lein-test-refresh "0.19.0"]
                                  [lein-doo "0.1.8"]

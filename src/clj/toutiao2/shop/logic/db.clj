@@ -6,7 +6,7 @@
    [mount.core :refer [defstate] :as mount]
    [clojure.java.jdbc :as jdbc]
    [honeysql.core :as sql]
-   [honeysql.helpers :refer :all :as helpers]
+   [honeysql.helpers :refer :all :as helpers :exclue [update]]
    [clojure.string :as str]))
 
 (defstate shop-datasource
@@ -14,7 +14,7 @@
            (log/info "starting shop db...")
            {:datasource (hikari/make-datasource (-> env :database-spec))})
   :stop (do
-          (log/info "stop shop db...")
+          (log/info "stoping shop db...")
           (hikari/close-datasource (:datasource shop-datasource))))
 
 #_(mount/start #'shop-datasource)
@@ -64,6 +64,10 @@
 (defn ->dbmap [m]
   (reduce (fn [col [k v]]
             (assoc col (-> k name (str/replace #"-" "_") keyword) v)) {} m))
+
+(defn ->common_map [m]
+  (reduce (fn [col [k v]]
+            (assoc col (-> k name (str/replace #"_" "-") keyword) v)) {} m))
 
 (defmacro defget
   "根据关键词批量创建get函数"

@@ -1,4 +1,4 @@
-(ns toutiao2.shop.logic.common-account
+(ns toutiao2.shop.logic.caccount
   (:require
    [toutiao2.shop.logic.db :refer :all]
    [toutiao2.utils :as utils]
@@ -25,31 +25,34 @@
   "普通的用户名密码类型的验证"
   [username password]
   (if-let [account (get-account-by-name username)]
-    (-> (select :id)
+    (-> (select :*)
         (from :common_account)
         (where [:= :username username]
                [:= :password (encrypt password (:seed account))]
                [:= :is_active 1])
         (sql-query)
-        (first))))
+        (first)
+        (->common_map))))
 
 
 (defn save-account!
   "保存授权账号"
   [account]
-  (save-simple-data! :common_account account :username))
+  (save-simple-data! :common_account
+                     (->dbmap account)
+                     :username))
 
 
 (defn create-account
   "创建普通的授权账号"
-  [{:keys [user_id username password is_active]
-    :or {is_active true}}]
+  [{:keys [user-id username password is-active]
+    :or {is-active true}}]
   (let [seed (utils/rand-string)
         account {:username username
                  :password (encrypt password seed)
-                 :user_id user_id
+                 :user_id user-id
                  :seed seed
-                 :is_active is_active
+                 :is_active is-active
                  :id (utils/rand-idstr)}]
     ^{:type :common} account))
 
@@ -60,3 +63,5 @@
   (assoc account
          :password
          (encrypt password (:seed account))))
+
+(defget account [:user-id])
