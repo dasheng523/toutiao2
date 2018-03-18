@@ -7,7 +7,7 @@
 
 
 (defn home-page []
-  (layout/render "shop/home.html"))
+  (layout/render "shop/index.html"))
 
 (defroutes shop-routes
   (GET "/shop" []

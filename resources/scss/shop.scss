@@ -1,0 +1,39 @@
+body, dl, dd, h1, h2, h3, h4, h5, h6, p, form {margin:0;}
+ol,ul {margin:0; padding:0;}
+a {text-decoration: none;}
+ul {list-style: none;}
+
+.l {float: left;}
+.r {float: right;}
+.flex {display: flex;}
+.flex-1 {flex: 1;}
+
+.cp-row {
+  width: 1080px;
+  margin: 0 auto;
+  position: relative;
+}
+.content-between {
+  justify-content: space-between;
+}
+
+.h-sitenav{background: #333; font-size: 12px; padding: 10px 0;}
+.h-sitenav a, .h-nav-itemlist .h-nav-item {color: #ccc;}
+.h-sitenav a:hover, .h-nav-itemlist .h-nav-item:hover {color: #fff;}
+
+.h-notice {background: url(https://yanxuan.nosdn.127.net/d132c2561f18f1149d566a60d05fd9b7.gif) top left no-repeat; margin-left: 20px;}
+.h-notice ul {height: 15px; overflow: hidden; padding-left: 15px; line-height: 15px;}
+.h-notice a {color: #b4a078; text-decoration: underline;}
+.h-nav-item {padding: 0 10px;}
+
+.h-nav-itemlist .h-nav-item {border-left: 1px solid #5c5c5c;}
+.h-nav-item-droplist {position: absolute; margin-top: 10px; margin-left: -25px; background: #fff; border: 1px solid #eee; width: 100px;}
+.h-nav-item-droplist li {padding: 10px 10px; border-bottom: 1px solid #eee; text-align: center;}
+.h-nav-item-droplist li a {color: #333;}
+.h-nav-item-droplist li a:hover {color: #b4a078;}
+
+.header-bar {position: relative; padding: 50px 0}
+.header-bar .logo {display: flex; justify-content: center;}
+.header-bar .extra-box {position: absolute; right: 0;}
+
+.drop-search {display: none;}
