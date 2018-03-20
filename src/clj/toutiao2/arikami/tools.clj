@@ -162,13 +162,13 @@
   "导出所有属性值"
   [list]
   (reduce
-    (fn [m item]
-      (reduce (fn [v k]
-                (update v k #(conj % (-> (get item k) format-attr))))
-              m
-              (keys m)))
-    {:color #{} :material #{} :size #{} :type #{} :capacity #{} :option #{}}
-    list))
+   (fn [m item]
+     (reduce (fn [v k]
+               (update v k #(conj % (-> (get item k) format-attr))))
+             m
+             (keys m)))
+   {:color #{} :material #{} :size #{} :type #{} :capacity #{} :option #{}}
+   list))
 
 (def attribute-map {:color 90
                     :size 134
@@ -179,14 +179,19 @@
 
 
 (defn convert-images [data list]
-  (let [image (-> (:image data)
-                  (str/split #";")
-                  first
-                  (str/replace #"&" ""))]
+  (let [image (and (:image data)
+                   (-> (:image data)
+                       (str/split #";")
+                       first
+                       (str/replace #"&" "")))]
     {:base_image image
      :thumbnail_image image
      :small_image image
-     :additional_images (convert-additional_images data list)}))
+     :additional_images (and (not-empty (:image data))
+                             (not-empty (:product_type data))
+                             (convert-additional_images data list))}))
+
+
 
 (defn find-sku [sku list]
   (-> list
@@ -216,38 +221,66 @@
 
 
 (defn convert-data [data list]
-  (let [image (-> (:image data)
-                  (str/split #";")
-                  first
-                  (str/replace #"&" ""))]
-    (merge {:sku (:sku data)
-            :name (:name_en data)
-            :price (:price data)
-            :special_price (:special_price data)
-            :description (generate-description data)
-            :categories (-> (:categories data)
-                            (str/replace #",Categories" ";Categories")
-                            (str/replace #", Categories" ";Categories")
-                            (str/replace #", " " ")
-                            (str/replace #"," " ")
-                            (str/replace #";" ","))
-            :product_type (:product_type data)
-            :meta_title (:meta_title data)
-            :meta_keywords (-> (name->url-key (get data :name_en "") (:sku data))
+  (merge {:sku (:sku data)
+          :name (:name_en data)
+          :price (:price data)
+          :special_price (:special_price data)
+          :description (generate-description data)
+          :categories (and (:categories data)
+                           (-> (:categories data)
+                               (str/replace #",Categories" ";Categories")
+                               (str/replace #", Categories" ";Categories")
+                               (str/replace #", " " ")
+                               (str/replace #"," " ")
+                               (str/replace #";" ",")))
+          :product_type (:product_type data)
+          :meta_title (:meta_title data)
+          :meta_keywords (if (empty? (:meta_keywords data))
+                           (-> (name->url-key (get data :name_en "") (:sku data))
                                (str/replace #"-" ","))
-            :meta_description (:meta_description data)
-            :short_description (if (:description_en data) (utils/trunc (str (:description_en data)) 500))
-            :additional_attributes (convert-addattr data)
-            :configurable_variations (convert-configvar data list)
-            :weight (* (:weight data) 1)
-            :visibility (if (and (= (get data :product_type) "simple")
-                                 (parent-product (:sku data) list)
-                                 (not= (parent-product (:sku data) list) data))
-                          "Not Visible Individually"
-                          "Catalog, Search")
-            :related_skus (genereate-related-skus data)
-            :url_key (name->url-key (get data :name_en "") (:sku data))}
-           (convert-images data list))))
+                           (:meta_keywords data))
+          :meta_description (:meta_description data)
+          :short_description (if (:description_en data) (utils/trunc (str (:description_en data)) 500))
+          :additional_attributes (convert-addattr data)
+          :configurable_variations (convert-configvar data list)
+          :weight (if (:weight data) (:weight data) 0)
+          :visibility (if (and (= (get data :product_type) "simple")
+                               (parent-product (:sku data) list)
+                               (not= (parent-product (:sku data) list) data))
+                        "Not Visible Individually"
+                        "Catalog, Search")
+          :related_skus (genereate-related-skus data)
+          :url_key (if (:url_key data)
+                     (:url_key data)
+                     (name->url-key (get data :name_en "") (:sku data)))}
+         (convert-images data list)))
+
+(defn simple-data [data _]
+  (->> (merge {:name (:name_en data)
+          :sku (:sku data)
+          :price (:price data)
+          :special_price (:special_price data)
+          :product_type (:product_type data)
+          :categories (and (:categories data)
+                           (-> (:categories data)
+                               (str/replace #",Categories" ";Categories")
+                               (str/replace #", Categories" ";Categories")
+                               (str/replace #", " " ")
+                               (str/replace #"," " ")
+                               (str/replace #";" ",")))
+          :url_key (if (:url_key data)
+                     (:url_key data)
+                     (name->url-key (get data :name_en "") (:sku data)))
+          :description (generate-description data :description_fr)
+          :meta_title (:meta_title data)
+          :meta_keywords (:meta_keywords data)
+          :meta_description (:meta_description data)
+          :short_description (if (:description_en data) (utils/trunc (str (:description_en data)) 500))
+          :weight (if (:weight data) (:weight data))
+              :related_skus (genereate-related-skus data)})
+       (remove #(empty? (str/trim (str (second %)))))
+      (into {})))
+
 
 
 (defn fr-data [data _]
@@ -266,7 +299,7 @@
          {:name (:name_es data)
           :sku (:sku data)
           :store_view_code "spanish"
-          :product_type "configurable"
+          :product_type (:product_type data)
           :description (generate-description data :description_es)
           :url_key (name->url-key (get data :name_es "") (:sku data))}))
 
@@ -276,7 +309,7 @@
          {:name (:name_de data)
           :sku (:sku data)
           :store_view_code "spanish"
-          :product_type "configurable"
+          :product_type (:product_type data)
           :description (generate-description data :description_es)
           :url_key (name->url-key (get data :name_de "") (:sku data))}))
 
@@ -293,10 +326,10 @@
   "找出map-list中值重复的key"
   [map-list]
   (keys (filter
-          #(< (count (second %)) 2)
-          (apply merge-with
-                 into
-                 (map (partial walk/walk (fn [[k v]] {k #{v}}) identity) map-list)))))
+         #(< (count (second %)) 2)
+         (apply merge-with
+                into
+                (map (partial walk/walk (fn [[k v]] {k #{v}}) identity) map-list)))))
 
 
 (defn replace-attributes
@@ -335,15 +368,18 @@
 (defn create-magento-product [data]
   (merge empty-product-info default-product-info data))
 
-(defn do-all-data-logic [in-data out-file convert-data]
-  (let [list (-> in-data (->> (map trim-map-val)))]
-    (if (s/valid? ::data-list list)
-      (-> (map #(-> (convert-data % list) create-magento-product) list)
-          (remove-duplicate-attribute)
-          (utils/maps->csv-file out-file))
-      (-> (s/explain-data ::data-list list)
-          (get :clojure.spec.alpha/problems)))))
+(defn do-all-data-logic
+  ([in-data out-file convert-data]
+   (let [list (-> in-data (->> (map trim-map-val)))]
+     (-> (map #(-> (convert-data % list) create-magento-product) list)
+         (remove-duplicate-attribute)
+         (utils/maps->csv-file out-file)))))
 
+(defn do-simple-logic
+  [in-data out-file convert-data]
+  (let [list (-> in-data (->> (map trim-map-val)))]
+    (-> (map #(convert-data % list) list)
+        (utils/maps->csv-file out-file))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; attribute ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -357,7 +393,7 @@
              exist-text (set (map :value (db/get-attribute-option-value attr-id dbconn)))
              diff-options (cset/difference (set (remove nil? coll)) exist-text)]
          (when-not (empty? diff-options)
-             (db/insert-options attr-id diff-options dbconn))))))
+           (db/insert-options attr-id diff-options dbconn))))))
   ([dataset]
    (import-attribute-options dataset "prod")))
 
@@ -405,24 +441,33 @@
     (shell/sh "php" "bin/magento" "cache:flush" :dir dir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; main ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-#_(def excel-data (utils/read-excel->map "G:/listdata/2.xlsx" "upload_template"))
+#_(def excel-data (utils/read-excel->map "g:/listdata/3-simple.xlsx" "upload_template"))
+#_(do-simple-logic excel-data "g:/555.csv" simple-data)
+
+#_(def excel-data (utils/read-excel->map "g:/listdata/3-all.xlsx" "upload_template"))
+#_(do-all-data-logic excel-data "g:/555.csv" convert-data)
+#_(let [list excel-data]
+  (-> (map #(-> (convert-data % list) create-magento-product) list)
+      #_(remove-duplicate-attribute)
+      ))
+
 
 #_(println (check-data excel-data))
 
 
-; 校验图片存在
+                                        ; 校验图片存在
 #_(verify-files (set (mapcat #(str/split (:image %) #";") new-excel-data)))
-; 校验SKU
+                                        ; 校验SKU
 #_(verify-sku excel-data)
 #_(verify-sku new-excel-data)
 
-; 导入属性值
+                                        ; 导入属性值
 #_(import-attribute-options (attribute-dataset excel-data) "test")
 
-; 删除index(可选)
+                                        ; 删除index(可选)
 #_(db/delete-all-category-index)
 
-; 生成主导入文件
+                                        ; 生成主导入文件
 #_(do-all-data-logic excel-data "G:/data1.csv" convert-data)
 #_(do-all-data-logic excel-data "G:/data1-fr.csv" fr-data)
 #_(do-all-data-logic excel-data "G:/data1-es.csv" es-data)

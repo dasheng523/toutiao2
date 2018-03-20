@@ -73,6 +73,7 @@
                 <h3>Step 4, download csv</h3>
                 <div class="row">
                     <div class="col-12">
+                        <button class="btn btn-primary" onclick="simpleCsv()">simple csv</button>
                         <button class="btn btn-primary" onclick="mainCsv()">main csv</button>
                         <button class="btn btn-primary" onclick="frCsv()">fr csv</button>
                         <button class="btn btn-primary" onclick="esCsv()">es csv</button>
@@ -111,128 +112,135 @@
         <script type="text/javascript">
 
          function getFileName() {
-           var val = $('input[name=filename]:checked').val()
-           if (val) {
-             return val
-           }
-           alert('please select file')
+             var val = $('input[name=filename]:checked').val()
+             if (val) {
+                 return val
+             }
+             alert('please select file')
          }
 
          function defaultPost(url, handler) {
-           return () => {
-             var filename = getFileName()
-             if (filename) {
-               $('.msg-bg').removeClass('hide')
-               $.post(url, {"__anti-forgery-token": csrfToken, filename: filename},
-                      (resp) => {
-                        $('.msg-bg').addClass('hide')
-                        console.log(resp)
-                        if (resp['error_msg']) {
-                          alert(resp['error_msg'])
-                          return
-                        }
-                        handler(resp)
-                      },
-                      'json')
+             return () => {
+                 var filename = getFileName()
+                 if (filename) {
+                     $('.msg-bg').removeClass('hide')
+                     $.post(url, {"__anti-forgery-token": csrfToken, filename: filename},
+                            (resp) => {
+                                $('.msg-bg').addClass('hide')
+                                console.log(resp)
+                                if (resp['error-msg']) {
+                                    alert(resp['error-msg'])
+                                    return
+                                }
+                                handler(resp)
+                            },
+                            'json')
+                 }
              }
-           }
          }
 
          const importAttr = defaultPost('/arikami/importAttr', (rs) => {
-           alert('success')
+             alert('success')
          })
          const importAttrTest = defaultPost('/arikami/importAttrTest', (rs) => {
-           alert('success')
+             alert('success')
          })
 
          const verifyImages = () => {
-           const post = defaultPost('/arikami/verifyImages', (rs) => {
-             let error = ""
-             if (rs['error-images'] && rs['error-images'].length > 0) {
-               error = "error images:" + "<br>"
-               error += rs['error-images'].join("<br>")
-             }
-             $('#errors').html(error)
-           })
+             const post = defaultPost('/arikami/verifyImages', (rs) => {
+                 let error = ""
+                 if (rs['error-images'] && rs['error-images'].length > 0) {
+                     error = "error images:" + "<br>"
+                     error += rs['error-images'].join("<br>")
+                 }
+                 $('#errors').html(error)
+             })
 
-           post()
+             post()
          }
 
          const commonCheck = ()=> {
-           const post = defaultPost('/arikami/checkExcel', (rs) => {
-             let error = ""
-             if (rs['rs'] && rs['rs'].length > 0) {
-               error += rs['rs'].join("<br>")
-             }
-             $('#errors').html(error)
-           })
+             const post = defaultPost('/arikami/checkExcel', (rs) => {
+                 let error = ""
+                 if (rs['rs'] && rs['rs'].length > 0) {
+                     error += rs['rs'].join("<br>")
+                 }
+                 $('#errors').html(error)
+             })
 
-           post()
+             post()
          }
 
          const verifySku = () => {
-           const post = defaultPost('/arikami/verifySku', (rs) => {
-             let error = ""
-             if (rs['error-sku'] && rs['error-sku'].length > 0) {
-               error += "duplicate sku:" + "\n"
-               error += rs['error-sku'].join("\n")
-             }
-             $('#errors').html(error)
-           })
+             const post = defaultPost('/arikami/verifySku', (rs) => {
+                 let error = ""
+                 if (rs['error-sku'] && rs['error-sku'].length > 0) {
+                     error += "duplicate sku:" + "\n"
+                     error += rs['error-sku'].join("\n")
+                 }
+                 $('#errors').html(error)
+             })
 
-           post()
+             post()
          }
 
          const delIndex = defaultPost('/arikami/delIndex', (rs) => {
-           alert('success')
+             alert('success')
          })
 
          const delIndexTest = defaultPost('/arikami/delIndexTest', (rs) => {
-           alert('success')
+             alert('success')
          })
 
          const reindex = defaultPost('/arikami/reindex', (rs) => {
-           alert('success')
+             alert('success')
          })
 
          const reindexTest = defaultPost('/arikami/reindextest', (rs) => {
-           alert('success')
+             alert('success')
          })
 
          const flushcache = defaultPost('/arikami/flushcache', (rs) => {
-           alert('success')
+             alert('success')
          })
 
          const flushcacheTest = defaultPost('/arikami/flushcacheTest', (rs) => {
-           alert('success')
+             alert('success')
+         })
+
+         const simpleCsv = defaultPost('/arikami/simpleCsv', (rs) => {
+             if (rs['path']) {
+                 window.open('/file/' + rs['path'], '_blank');
+             }
+             alert('success')
          })
 
          const mainCsv = defaultPost('/arikami/mainCsv', (rs) => {
-           if (rs['path']) {
-             window.open('/file/' + rs['path'], '_blank');
-           }
-           alert('success')
+             if (rs['path']) {
+                 window.open('/file/' + rs['path'], '_blank');
+             }
+             alert('success')
          })
 
          const frCsv = defaultPost('/arikami/frCsv', (rs) => {
-           if (rs['path']) {
-             window.open('/file/' + rs['path'], '_blank');
-           }
-           alert('success')
+             if (rs['path']) {
+                 window.open('/file/' + rs['path'], '_blank');
+             }
+             alert('success')
          })
 
          const esCsv = defaultPost('/arikami/esCsv', (rs) => {
-           if (rs['path']) {
-             window.open('/file/' + rs['path'], '_blank');
-           }
-           alert('success')
+             if (rs['path']) {
+                 window.open('/file/' + rs['path'], '_blank');
+             }
+             alert('success')
          })
 
          const deCsv = defaultPost('/arikami/deCsv', (rs) => {
-           if (rs['path']) {
-             window.open('/file/' + rs['path'], '_blank');
-           }
-           alert('success')
+             if (rs['path']) {
+                 window.open('/file/' + rs['path'], '_blank');
+             }
+             alert('success')
          })
 
         </script>

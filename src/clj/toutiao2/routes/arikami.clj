@@ -57,7 +57,7 @@
      ~@body
      (catch Exception e#
        (log/error e#)
-       (response/ok {:error-msg "file content error"}))))
+       (response/ok {:error-msg "error"}))))
 
 (defn verifySku [filename]
   (with-try
@@ -125,17 +125,20 @@
     (tools/flush-cache "test")
     (response/ok {:state :success})))
 
-(defn csvHandler [convert-format target-name]
+
+(defn csvHandler [convert-format target-name logic]
   (fn [filename]
     (with-try
       (let [data (getExcelData filename)]
-        (tools/do-all-data-logic data (str (get-upload-path) "/" target-name) convert-format)
+        (logic data (str (get-upload-path) "/" target-name) convert-format)
         (response/ok {:path target-name})))))
 
-(def mainCsv (csvHandler tools/convert-data "data-main.csv"))
-(def frCsv (csvHandler tools/fr-data "data-fr.csv"))
-(def esCsv (csvHandler tools/es-data "data-es.csv"))
-(def deCsv (csvHandler tools/de-data "data-de.csv"))
+(def mainCsv (csvHandler tools/convert-data "data-main.csv" tools/do-all-data-logic))
+(def frCsv (csvHandler tools/fr-data "data-fr.csv" tools/do-all-data-logic))
+(def esCsv (csvHandler tools/es-data "data-es.csv" tools/do-all-data-logic))
+(def deCsv (csvHandler tools/de-data "data-de.csv" tools/do-all-data-logic))
+(def simpleCsv (csvHandler tools/simple-data "data-simple.csv" tools/do-simple-logic))
+
 
 
 (defroutes arikami-routes
@@ -158,6 +161,8 @@
         (importAttrTest filename))
   (POST "/arikami/delIndexTest" [filename]
         (delIndexTest filename))
+  (POST "/arikami/simpleCsv" [filename]
+        (simpleCsv filename))
   (POST "/arikami/mainCsv" [filename]
         (mainCsv filename))
   (POST "/arikami/frCsv" [filename]
