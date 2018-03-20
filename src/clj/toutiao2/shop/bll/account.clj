@@ -29,9 +29,9 @@
   [session-id]
   (cache/get-cache (str "login-user:" session-id)))
 
-(register {:email "dasheng5231@163.com" :password "a5235013"})
-(login {:email "dasheng5231@163.com"
+#_(register {:email "dasheng5231@163.com" :password "a5235013"})
+#_(login {:email "dasheng5231@163.com"
         :password "a5235013"
         :session-id "11223344"})
-(is-login? "11223344")
+#_(is-login? "11223344")
 
