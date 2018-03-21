@@ -277,7 +277,7 @@
           :meta_description (:meta_description data)
           :short_description (if (:description_en data) (utils/trunc (str (:description_en data)) 500))
           :weight (if (:weight data) (:weight data))
-              :related_skus (genereate-related-skus data)})
+          :related_skus (genereate-related-skus data)})
        (remove #(empty? (str/trim (str (second %)))))
       (into {})))
 

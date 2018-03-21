@@ -21,6 +21,13 @@
   [_ binding acc]
   (update-in acc [:letks] into [binding `(:identity ~'+compojure-api-request+)]))
 
+
+(s/defschema Thingie {:id Long
+                      :hot Boolean
+                      :tag (s/enum :kikka :kukka)
+                      :chief [{:name String
+                               :type #{{:id String}}}]})
+
 (defapi service-routes
   {:swagger {:ui "/swagger-ui"
              :spec "/swagger.json"
@@ -32,7 +39,27 @@
        :auth-rules authenticated?
        :current-user user
        (ok {:user user}))
+
   (context "/api" []
+    :tags ["shop"]
+
+    (GET "/test" []
+         :return       String
+         :query-params [x :- Long, {y :- Long 1}]
+         :summary      "测试"
+         (ok "你好"))
+    (POST "/echo" []
+           :return   Thingie
+           :body     [thingie Thingie]
+           :summary  "echoes a Thingie from json-body"
+           (ok thingie))
+    (GET "/auth" []
+         :return       String
+         :query-params [username :- String, password :- String]
+         :summary      "用户授权"
+         (ok "你好")))
+
+  (context "/test" []
     :tags ["thingie"]
 
     (GET "/test" []

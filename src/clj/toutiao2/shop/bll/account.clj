@@ -1,6 +1,7 @@
 (ns toutiao2.shop.bll.account
   (:require
    [toutiao2.shop.logic.caccount :as calogic]
+   [toutiao2.shop.logic.facebookaccount :as fklogic]
    [toutiao2.shop.logic.user :as userlogic]
    [toutiao2.shop.cache :as cache]))
 
@@ -35,3 +36,15 @@
         :session-id "11223344"})
 #_(is-login? "11223344")
 
+
+(defn register-facebook
+  "注册facebook用户"
+  [facebook-user-id first-name last-name]
+  (assert (empty? (fklogic/get-by-facebook-id facebook-user-id)) "该用户已存在")
+  (let [user (userlogic/create-user {:first-name first-name :last-name last-name})
+        account (fklogic/create-account {:user-id (userlogic/get-user-id user)
+                                         :facebook-user-id facebook-user-id})]
+    (fklogic/save-account! account)
+    (userlogic/save-user! user)))
+
+#_(register-facebook "ttyy" "huang" "yesheng")
