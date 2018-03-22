@@ -7,6 +7,7 @@
    [honeysql.core :as sql]
    [clojure.string :as str]))
 
+(defget user [:email :id :first-name :last-name])
 
 (defn create-user
   "创建用户"
@@ -25,6 +26,17 @@
 (defn get-user-by-email [email]
   (get-first :users :email email))
 
-(defget user [:email :id :name])
+(defn get-by-id [user-id]
+  (get-first :users :id user-id))
 
 
+(defn get-user-field
+  "获取用户某个字段"
+  [user field]
+  (get user field))
+
+
+(defn get-user-data
+  "通过user-id和字段获取user的数据"
+  [user-info fields]
+  (reduce #(assoc %1 %2 (get-user-field user-info %2)) {} fields))

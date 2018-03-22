@@ -1,10 +1,10 @@
 (ns toutiao2.routes.services
   (:require [ring.util.http-response :refer :all]
             [compojure.api.sweet :refer :all]
-            [schema.core :as s]
             [compojure.api.meta :refer [restructure-param]]
             [buddy.auth.accessrules :refer [restrict]]
-            [buddy.auth :refer [authenticated?]]))
+            [buddy.auth :refer [authenticated?]]
+            [toutiao2.shop.schema :as ss]))
 
 (defn access-error [_ _]
   (unauthorized {:error "unauthorized"}))
@@ -21,12 +21,6 @@
   [_ binding acc]
   (update-in acc [:letks] into [binding `(:identity ~'+compojure-api-request+)]))
 
-
-(s/defschema Thingie {:id Long
-                      :hot Boolean
-                      :tag (s/enum :kikka :kukka)
-                      :chief [{:name String
-                               :type #{{:id String}}}]})
 
 (defapi service-routes
   {:swagger {:ui "/swagger-ui"
@@ -48,16 +42,11 @@
          :query-params [x :- Long, {y :- Long 1}]
          :summary      "测试"
          (ok "你好"))
-    (POST "/echo" []
-           :return   Thingie
-           :body     [thingie Thingie]
-           :summary  "echoes a Thingie from json-body"
-           (ok thingie))
     (GET "/auth" []
-         :return       String
+         :return       ss/RespLogin
          :query-params [username :- String, password :- String]
          :summary      "用户授权"
-         (ok "你好")))
+         (ok {:code 200 :message "success" :data {:uname "5566"}})))
 
   (context "/test" []
     :tags ["thingie"]
