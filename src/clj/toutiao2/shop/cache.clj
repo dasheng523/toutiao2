@@ -18,7 +18,7 @@
   (swap! c #(cache/miss % k v)))
 
 
-(defn get-or-create!
+(defn get-cache!
   [c k]
   (cache/lookup
    (swap! c
@@ -27,7 +27,7 @@
              (cache/miss % k nil)))
    k))
 
-(defn get-or-create-live!
+(defn get-cache-live!
   "获取缓存，并且使得缓存寿命续期"
   [c k]
   (let [data (if (cache/has? @c k)
@@ -36,4 +36,9 @@
     (set-cache! c k data)
     data))
 
-(def user-token (create-cache))
+; 一些正在用的缓存
+(def user-token-cache (create-cache))
+(def token-cache (create-cache))
+
+(defn get-token-data [token k]
+  (get-cache-live! token-cache (str (name k) token)))

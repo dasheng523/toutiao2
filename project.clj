@@ -62,7 +62,7 @@
                  [javax.xml.bind/jaxb-api "2.2.8"]          ; xml
                  [flake "0.4.5"]                            ; 生成唯一字符串
                  [hikari-cp "2.2.0"]                        ; 数据库连接池
-                 [com.taoensso/tempura "1.2.0"]             ; i18n
+                 [tongue "0.2.4"]                           ; i18n
                  #_[opencv/opencv "3.3.1"]
                  #_[opencv/opencv-native "3.3.1"]]
 

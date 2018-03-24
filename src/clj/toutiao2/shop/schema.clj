@@ -13,9 +13,7 @@
      (merge ~base
             {:data ~schema})))
 
-(defresp RespLogin
+(defresp RespAuth
   resp-base
-  {:username String})
-
-
-(s/validate RespLogin {:code 200 :message "success" :data {:username "5566"}})
+  {:first-name String
+   :last-name String})

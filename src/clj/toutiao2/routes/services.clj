@@ -43,7 +43,7 @@
          :summary      "测试"
          (ok "你好"))
     (GET "/auth" []
-         :return       ss/RespLogin
+         :return       ss/RespAuth
          :query-params [username :- String, password :- String]
          :summary      "用户授权"
          (ok {:code 200 :message "success" :data {:uname "5566"}})))

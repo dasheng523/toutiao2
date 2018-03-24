@@ -21,3 +21,7 @@ To start a web server for the application, run:
 Copyright © 2017 FIXME
 
 2049
+
+
+## TODO
+限制token不能跨浏览器
