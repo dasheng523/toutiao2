@@ -440,6 +440,44 @@
               (-> env :arikami-root))]
     (shell/sh "php" "bin/magento" "cache:flush" :dir dir)))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;; sharesale ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def cateid-data (utils/csv-file->maps "g:/arikaimi/category_id.csv"))
+(def excel-data (utils/read-excel->map "g:/listdata/1.xlsx" "upload_template"))
+(def test-data (-> (map :categories excel-data)
+                   (->> (mapcat (fn [s]
+                               (-> (str/split s #";")
+                                   (last)
+                                   (str/trim)
+                                   (str/split #"/")
+                                   (->> (map str/trim))
+                                   ((juxt #(nth % 1) #(nth % 2)))))))
+                   (set)))
+
+(-> (map :categories excel-data)
+    (->> (map (fn [s]
+                   (-> (str/split s #";")
+                       (last)
+                       (str/trim)
+                       (str/split #"/")
+                       (->> (map str/trim))
+                       ((juxt #(nth % 1) #(nth % 2)))))))
+    (set))
+
+(let [maxid (-> cateid-data
+               (->> (map #(-> % :id utils/parse-int))
+                    (apply max)))]
+  maxid)
+
+
+
+
+
+
+;; 将分类分拆形成一颗树
+;; 指定分类ID，并保存
+;; 生成文件
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;; main ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #_(def excel-data (utils/read-excel->map "g:/listdata/3-simple.xlsx" "upload_template"))
 #_(do-simple-logic excel-data "g:/555.csv" simple-data)

@@ -61,7 +61,9 @@
 (defn read-csv [file]
   (with-open [reader (io/reader file)]
     (doall
-      (csv/read-csv reader))))
+     (csv/read-csv reader))))
+
+
 
 (defn list-data->maps [csv-data]
   (map zipmap
