@@ -9,7 +9,7 @@
             [flake.core :as flake]
             [flake.utils :as flake-utils]
             [digest :as digest])
-  (:import (java.io StringReader)))
+  (:import (java.io StringReader PushbackReader FileReader FileWriter File)))
 
 
 (s/def :http-response/status (s/and int? #(= 200 %)))
@@ -166,3 +166,18 @@
 
 (defn list-functions [namespace]
   (keys (ns-publics namespace)))
+
+
+
+(defn serialize
+  "Save a clojure form to a file"
+  [file form]
+  (with-open [w (FileWriter. (clojure.java.io/file file))]
+    (print-dup form w)))
+
+(defn deserialize
+  "Load a clojure form from file."
+  [file]
+  (with-open [r (PushbackReader. (FileReader. (clojure.java.io/file file)))]
+    (read r)))
+
