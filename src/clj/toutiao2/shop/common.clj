@@ -17,14 +17,22 @@
                                  (->> (get ~fns ks#) first))))))))
 
 
-#_(defn defnmap
-  [fname & fns]
-  (fn [m]
-    (let [ks (-> m keys set)]
-      (utils/find-first-in-list #(cset/subset? ks ) fns))))
 
+(defn ->success
+  ([data msg]
+   {:code 200
+    :message msg
+    :data data})
+  ([data]
+   (->success data "success")))
 
-
-#_(defnmap aaaa
-  ([:username :password] authenticate-common-account))
+(defn ->fail
+  ([data msg code]
+   (merge {:code code
+           :message msg
+           :data data}))
+  ([data msg]
+   (->fail [data msg 800]))
+  ([msg]
+   (->fail [] msg 800)))
 
