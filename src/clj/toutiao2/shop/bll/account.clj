@@ -20,10 +20,7 @@
 (defn auth
   "登陆"
   [{:keys [email password]}]
-  (when-let [account (calogic/authenticate-account email password)]
-    (let [token (utils/rand-idstr)]
-      (cache/set-cache! cache/user-token-cache token (calogic/get-account-user-id account))
-      token)))
+  (calogic/authenticate-account email password))
 
 (defn token->user-id
   "通过token转换userid"

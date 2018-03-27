@@ -3,12 +3,13 @@
 
 
 (def trans-dict
-  (atom {:en {:fail "fail"
+  (atom {:en {:auth-fail "fail"
               :flower "Flower"}
 
-         :cn {}
+         :cn {:auth-fail "您的用户名或密码有误，请重试"}
 
-         :fr {}}))
+         :fr {}
+         :tongue/fallback :en}))
 
 (defn load-dict
   "加载翻译字典"
@@ -20,7 +21,8 @@
 
            :fr {}}))
 
-(def __
+(def tr
   (tongue/build-translate @trans-dict))
+
 
 

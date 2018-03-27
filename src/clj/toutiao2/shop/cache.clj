@@ -40,5 +40,3 @@
 (def user-token-cache (create-cache))
 (def token-cache (create-cache))
 
-(defn get-token-data [token k]
-  (get-cache-live! token-cache (str (name k) token)))

@@ -5,6 +5,7 @@
             [clojure.data.csv :as csv]
             [clojure.java.io :as io]
             [clojure.string :as str]
+            [toutiao2.config :refer [env]]
             [net.cgrand.enlive-html :as enlive]
             [flake.core :as flake]
             [flake.utils :as flake-utils]
@@ -90,6 +91,12 @@
       (cons (map #(name %) (keys (first data)))
             (map #(vals %) data)))))
 
+(defn data->csv-file [head body file]
+  (with-open [writer (io/writer file)]
+    (csv/write-csv
+     writer
+     (cons head body))))
+
 (defn read-excel [file tab cols]
   (->> (sheet/load-workbook file)
        (sheet/select-sheet tab)
@@ -168,3 +175,9 @@
 
 (defn list-functions [namespace]
   (keys (ns-publics namespace)))
+
+(defn lazy-contains? [col k]
+  (some #{k} col))
+
+(defn get-upload-path []
+  (-> env :upload-path))

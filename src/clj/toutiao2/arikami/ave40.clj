@@ -49,7 +49,7 @@
 
 #_(utils/save-to-excel
    (take 200 (all-customers))
-   "g:/listdata/customer.xlsx")
+   "g:/listdata/customers.xlsx")
 
 #_(utils/save-to-excel
  (take 200 (all-products))

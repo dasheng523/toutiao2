@@ -181,3 +181,4 @@
         (flushCacheTest filename))
   (GET "/file/:filename" [filename]
        (response/file-response (str (get-upload-path) "/" filename))))
+

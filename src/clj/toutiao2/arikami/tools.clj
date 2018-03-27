@@ -177,13 +177,15 @@
                     :option 146
                     :material 147})
 
+(defn- base-image [data]
+  (and (:image data)
+       (-> (:image data)
+           (str/split #";")
+           first
+           (str/replace #"&" ""))))
 
 (defn convert-images [data list]
-  (let [image (and (:image data)
-                   (-> (:image data)
-                       (str/split #";")
-                       first
-                       (str/replace #"&" "")))]
+  (let [image (base-image data)]
     {:base_image image
      :thumbnail_image image
      :small_image image
@@ -364,7 +366,6 @@
 
 
 
-
 (defn create-magento-product [data]
   (merge empty-product-info default-product-info data))
 
@@ -442,32 +443,89 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; sharesale ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def cateid-data (utils/csv-file->maps "g:/arikaimi/category_id.csv"))
-(def excel-data (utils/read-excel->map "g:/listdata/1.xlsx" "upload_template"))
-(def test-data (-> (map :categories excel-data)
-                   (->> (mapcat (fn [s]
-                               (-> (str/split s #";")
-                                   (last)
-                                   (str/trim)
-                                   (str/split #"/")
-                                   (->> (map str/trim))
-                                   ((juxt #(nth % 1) #(nth % 2)))))))
-                   (set)))
+(defn cateid-data []
+  (utils/csv-file->maps "g:/arikaimi/category_id.csv"))
 
-(-> (map :categories excel-data)
-    (->> (map (fn [s]
-                   (-> (str/split s #";")
-                       (last)
-                       (str/trim)
-                       (str/split #"/")
-                       (->> (map str/trim))
-                       ((juxt #(nth % 1) #(nth % 2)))))))
-    (set))
 
-(let [maxid (-> cateid-data
-               (->> (map #(-> % :id utils/parse-int))
-                    (apply max)))]
-  maxid)
+(defn- get-cates-data [s]
+  (-> (str/split s #";")
+      (last)
+      (str/trim)
+      (str/split #"/")
+      (->> (map str/trim))
+      ((juxt #(nth % 1) #(nth % 2)))))
+
+(defn all-category [input-data]
+  (-> (map :categories input-data)
+      (->> (mapcat get-cates-data))
+      (set)))
+
+(defn- intlist [n]
+  (lazy-seq (cons n (intlist (+ n 1)))))
+
+(defn map-cateid [input-data cateiddata]
+  (let [maxid (-> cateiddata
+                  (->> (map #(-> % :id utils/parse-int))
+                       (apply max)))
+        nums (intlist (+ maxid 1))
+        list (filter #(not (utils/lazy-contains? (map :category cateiddata) %)) (all-category input-data))]
+    (concat cateiddata
+            (map #(identity {:id %1 :category %2}) nums list))))
+
+(defn get-cates-id [mapdata catename]
+  (->
+   (utils/find-first-in-list #(= (:category %) catename) mapdata)
+   :id))
+
+
+(def sharesale-fields
+  ["SKU" "Name" "URL to product" "Price" "Retail Price" "URL to image" "URL to thumbnail image" "Commission"
+   "Category" "SubCategory" "Description" "SearchTerms" "Status" "Your MerchantID"
+   "Custom 1" "Custom 2" "Custom 3" "Custom 4" "Custom 5"
+   "Manufacturer" "PartNumber" "MerchantCategory" "MerchantSubcategory" "ShortDescription" "ISBN" "UPC"
+   "CrossSell" "MerchantGroup" "MerchantSubgroup" "CompatibleWith" "CompareTo" "QuantityDiscount" "Bestseller"
+   "AddToCartURL" "ReviewsRSSURL" "Option1" "Option2" "Option3" "Option4" "Option5"
+   "customCommissions" "customCommissionIsFlatRate" "customCommissionNewCustomerMultiplier" "mobileURL"
+   "mobileImage" "mobileThumbnail" "ReservedForFutureUse" "ReservedForFutureUse" "ReservedForFutureUse" "ReservedForFutureUse"])
+
+(defn empty-sharesale-data [fields]
+  (reduce #(assoc %1 %2 "") {} fields))
+
+
+(defn sharesale-convert [data mapdata]
+  (let [cates (get-cates-data (:categories data))]
+    (merge (empty-sharesale-data sharesale-fields)
+           {"SKU" (:sku data)
+            "Name" (:name_en data)
+            "URL to product" (str "https://www.arikami.com/" (name->url-key (get data :name_en "") (:sku data)))
+            "Price" (:special_price data)
+            "Retail Price" (:price data)
+            "URL to image" (str "https://www.arikami.com/pub/media/Products/" (base-image data))
+            "URL to thumbnail image" (str "https://www.arikami.com/pub/media/Products/" (base-image data))
+            "Commission" 15
+            "Category" (get-cates-id mapdata (first cates))
+            "SubCategory" (get-cates-id mapdata (second cates))
+            "MerchantCategory" (first cates)
+            "MerchantSubcategory" (second cates)
+            "Description" (:description data)
+            "SearchTerms" (-> (name->url-key (get data :name_en "") (:sku data))
+                              (str/replace #"-" ","))
+            "Status" "instock"
+            "Your MerchantID" "78202"})))
+
+(defn do-sharesale-logic [& data-paths]
+  (let [list (mapcat #(utils/read-excel->map % "upload_template") data-paths)
+        iddata (cateid-data)
+        mapdata (map-cateid list iddata)
+        share-data (map #(sharesale-convert % (map-cateid list iddata)) list)]
+    (utils/maps->csv-file mapdata (str (utils/get-upload-path) "/category-id.csv"))
+    (utils/data->csv-file sharesale-fields
+                          (map (fn [n] (reduce #(conj %1 (get n %2)) [] sharesale-fields))
+                               share-data)
+                          (str (utils/get-upload-path) "/sharesale.csv"))))
+
+#_(do-sharesale-logic "g:/listdata/1.xlsx" "g:/listdata/2.xlsx" "g:listdata/3.xlsx")
+
 
 
 
