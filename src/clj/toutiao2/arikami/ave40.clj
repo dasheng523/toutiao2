@@ -16,7 +16,7 @@
 
 (defn all-customers
   ([page]
-   (let [req {"PageSize" 500
+   (let [req {"PageSize" 5
               "PageNumber" page
               "RequestEntity" {"REP_0" ""}
               "Token" "ave40@SAGE"}
@@ -26,7 +26,7 @@
          totalpage (get data :TotalPages)]
      (lazy-seq (concat result
                        (if (> totalpage pagenum)
-                         (all-customer (+ page 1)))))))
+                         (all-customers (+ page 1)))))))
   ([]
    (all-customers 1)))
 
@@ -48,8 +48,8 @@
 
 
 #_(utils/save-to-excel
-   (take 200 (all-customers))
-   "g:/listdata/customers.xlsx")
+   (take 2 (all-customers))
+   "/Users/huangyesheng/Desktop/customers.xlsx")
 
 #_(utils/save-to-excel
  (take 200 (all-products))

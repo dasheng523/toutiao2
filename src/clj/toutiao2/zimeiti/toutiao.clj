@@ -21,12 +21,12 @@
 
 
 (defn recover-cookies [driver user]
-  (let [mycookies (utils/deserialize (str config/cookies-base-path user))]
+  (let [mycookies (utils/deserialize (str config/cookies-base-path user ".cookies"))]
     (doseq [co mycookies]
       (add-cookie driver co))))
 
 (defn save-cookies [driver user]
-  (io/make-parents (str config/cookies-base-path user))
+  (io/make-parents (str config/cookies-base-path user ".cookies"))
   (utils/serialize
    (str config/cookies-base-path user)
    (map #(dissoc % :cookie) (cookies driver))))
@@ -146,8 +146,8 @@
 
 
 (defn run [user]
-  (def mydriver (tdriver/create-chrome-driver))
-  (let [links (read-data-from-txt config/url-data)
+  (let [mydriver (tdriver/create-chrome-driver)
+        links (read-data-from-txt config/url-data)
         flist (for [link links] (future (grap/product-item-info link)))]
     (do-recover-cookies mydriver user)
     (open-toutiao mydriver user)
