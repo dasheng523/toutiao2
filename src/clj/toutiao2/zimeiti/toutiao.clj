@@ -31,11 +31,14 @@
    (str config/cookies-base-path user)
    (map #(dissoc % :cookie) (cookies driver))))
 
+
+
 (defn do-save-cookies [fn-get-user]
   (let [driver (tdriver/create-chrome-driver)]
     (to driver "https://mp.toutiao.com/profile_v2/")
     (save-cookies driver (fn-get-user))
     (close driver)))
+
 
 (defn do-recover-cookies [driver user]
   (to driver "https://mp.toutiao.com/profile_v2/")
