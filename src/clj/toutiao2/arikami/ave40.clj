@@ -24,6 +24,7 @@
          result (get data :Result)
          pagenum (get data :PageNumber)
          totalpage (get data :TotalPages)]
+     (println page)
      (lazy-seq (concat result
                        (if (> totalpage pagenum)
                          (all-customers (+ page 1)))))))
@@ -42,6 +43,7 @@
          result (get data :Result)
          pagenum (get data :PageNumber)
          totalpage (get data :TotalPages)]
+     (println page)
      (lazy-seq (concat result
                        (if (> totalpage pagenum)
                          (all-products (+ page 1))))))))
