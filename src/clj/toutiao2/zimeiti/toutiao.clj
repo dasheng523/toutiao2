@@ -12,6 +12,7 @@
 
 
 (def sleep-time 1000)
+(def driver {})
 
 (defn- read-excel [path cols]
   (->> path
@@ -28,21 +29,17 @@
 (defn save-cookies [driver user]
   (io/make-parents (str config/cookies-base-path user ".cookies"))
   (utils/serialize
-   (str config/cookies-base-path user)
+   (str config/cookies-base-path user ".cookies")
    (map #(dissoc % :cookie) (cookies driver))))
 
 
-
-(defn do-save-cookies [fn-get-user]
-  (let [driver (tdriver/create-chrome-driver)]
-    (to driver "https://mp.toutiao.com/profile_v2/")
-    (save-cookies driver (fn-get-user))
-    (close driver)))
+(defn do-save-cookies [username]
+  (save-cookies driver username))
 
 
-(defn do-recover-cookies [driver user]
+(defn do-recover-cookies [username]
   (to driver "https://mp.toutiao.com/profile_v2/")
-  (recover-cookies driver user))
+  (recover-cookies driver username))
 
 
 (defn handle-reset-page [driver]
@@ -51,8 +48,12 @@
          (str/includes? (html driver "span.action-text") "撤销"))
     (click driver "span.action-text")))
 
-
 (defn enter-post-page [driver]
+  (click driver "ul.garr-header-nav li:nth-child(2) a")
+  (click driver "ul.tui-menu-container li:nth-child(3) a"))
+
+
+(defn enter-post-page1 [driver]
   (click driver "div.shead_right div.shead-post")
   (Thread/sleep sleep-time)
   (when (exists? driver "div.dialog-footer .tui-btn-negative")
@@ -111,15 +112,17 @@
 (defn add-pic [driver {:keys [pic desc]}]
   (Thread/sleep sleep-time)
   (when pic
-    (if (exists? driver "div.content-wrapper div.upload-bg")
+    (if (exists? driver "div.upload-btn button.pgc-button")
       (click driver "div.upload-btn button.pgc-button")
       (click driver "div.figure-state button.figure-add-btn"))
     (send-keys driver "div.upload-handler input" pic)
-    (wait-until driver #(exists? % "div.button-group button.confirm-btn") (* 3600 1000) 1000)
-    (wait-until driver #(.startsWith (text % "div.image-footer div.drag-tip") "上传完成") (* 3600 1000) 1000)
-    (click driver "div.button-group button.confirm-btn")
-    (Thread/sleep sleep-time)
-    (input-text driver (str "div.content-wrapper div.pagelet-figure-gallery-item:last-child div.gallery-txt textarea") desc)))
+    (wait-until driver #(exists? % "div.drag-tip") (* 3600 1000) 1000)
+    #_(wait-until driver #(.startsWith (text % "div.image-footer div.drag-tip") "上传完成") (* 3600 1000) 1000)
+    #_(click driver "div.button-group button.confirm-btn")
+    #_(Thread/sleep sleep-time)
+    #_(input-text driver (str "div.content-wrapper div.pagelet-figure-gallery-item:last-child div.gallery-txt textarea") desc)))
+
+(add-pic driver {:pic "/Users/huangyesheng/Documents/pics/20180327/1522159074936.png" :desc "1111"})
 
 #_(add-item {:pic "/Users/huangyesheng/Documents/pics/20171102/1509628939329.png" :desc "ddddd" :link "https://detail.tmall.com/item.htm?id=536273268186" :title "wwww"} 6)
 
@@ -146,6 +149,18 @@
                        (str/includes? (html % "a.menu_item.selected") "内容管理"))
               (* 3600 1000)
               1000))
+
+(defn open-chrome
+  "打开头条"
+  []
+  (def driver (tdriver/create-chrome-driver))
+  (to driver "https://mp.toutiao.com/profile_v2/"))
+
+
+
+(defn doautorun [urls]
+  (enter-post-page driver)
+  #_(auto-fill-article driver grap/ddd))
 
 
 (defn run [user]
