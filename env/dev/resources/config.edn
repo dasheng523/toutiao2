@@ -18,4 +18,12 @@
                  :port-number        3306}
  :arikami-root "/Users/huangyesheng/Documents/project/arikami.com"
  :arikami-test-root "/Users/huangyesheng/Documents/project/arikami.com"
+
+
+ ; 头条
+ :win-download-path "e:/ttt/download"
+ :win-cookies-path "e:/ttt/cookies"
+
+ :mac-download-path "/Users/huangyesheng/Documents/pics"
+ :mac-cookies-path "/Users/huangyesheng/Documents/cookies/"
 }

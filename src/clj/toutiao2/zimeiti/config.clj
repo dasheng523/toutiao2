@@ -1,15 +1,27 @@
-(ns toutiao2.zimeiti.config)
+(ns toutiao2.zimeiti.config
+  (:require [clojure.string :as str]
+            [toutiao2.config :refer [env]]))
 
+(def *cos*
+  {:name (System/getProperty "os.name"),
+   :version (System/getProperty "os.version"),
+   :arch (System/getProperty "os.arch")})
 
-(def platform "mac")
-(def download-base-path "/Users/huangyesheng/Documents/pics")
-(def url-data "/Users/huangyesheng/Documents/pics/test.txt")
-(def cookies-base-path "/Users/huangyesheng/Documents/cookies/")
+(defn isWindows? []
+  (str/includes? (str/lower-case (:name *cos*)) "window"))
 
-#_(def platform "win")
-#_(def download-base-path "e:\\pics")
-#_(def url-data "e:\\test.txt")
-#_(def cookies-base-path "e:\\cookies\\")
+(defn isMac? []
+  (str/includes? (str/lower-case (:name *cos*)) "mac"))
+
+(defn get-download-path []
+  (if (isWindows?)
+    (-> env :win-download-path)
+    (-> env :mac-download-path)))
+
+(defn get-cookies-path []
+  (if (isWindows?)
+    (-> env :win-cookies-path)
+    (-> env :mac-cookies-path)))
 
 
 (def xf
@@ -18,11 +30,11 @@
    (map inc)
    (take 5)))
 
-(eduction xf (range 5))
+#_(eduction xf (range 5))
 
-(into [] xf (range 1000))
+#_(into [] xf (range 1000))
 
-(sequence xf (range 1000))
+#_(sequence xf (range 1000))
 
 
 (defn duplicates-odd-vals [xf]
@@ -37,4 +49,4 @@
            (xf input))            ; second odd value
        :ELSE        result ))))  ; do nothing
 
-(transduce duplicates-odd-vals conj (range 11))
+#_(transduce duplicates-odd-vals conj (range 11))

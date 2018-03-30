@@ -126,7 +126,7 @@
   ([data desc-key]
    (let [img-str (if (string? (:des_image data))
                    (-> (str/split (:des_image data) #";")
-                       (->> (map #(str "http://www.arikami.com/media/Products/" %)))
+                       (->> (map #(str "https://www.arikami.com/media/Products/" %)))
                        (->> (map #(str "<img src='" % "'>")))
                        (->> (str/join "\n"))))
          desc (if (string? (desc-key data))

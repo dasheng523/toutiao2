@@ -22,14 +22,14 @@
 
 
 (defn recover-cookies [driver user]
-  (let [mycookies (utils/deserialize (str config/cookies-base-path user ".cookies"))]
+  (let [mycookies (utils/deserialize (str (config/get-cookies-path) user ".cookies"))]
     (doseq [co mycookies]
       (add-cookie driver co))))
 
 (defn save-cookies [driver user]
-  (io/make-parents (str config/cookies-base-path user ".cookies"))
+  (io/make-parents (str (config/get-cookies-path) user ".cookies"))
   (utils/serialize
-   (str config/cookies-base-path user ".cookies")
+   (str (config/get-cookies-path) user ".cookies")
    (map #(dissoc % :cookie) (cookies driver))))
 
 
@@ -122,7 +122,7 @@
     #_(Thread/sleep sleep-time)
     #_(input-text driver (str "div.content-wrapper div.pagelet-figure-gallery-item:last-child div.gallery-txt textarea") desc)))
 
-(add-pic driver {:pic "/Users/huangyesheng/Documents/pics/20180327/1522159074936.png" :desc "1111"})
+#_(add-pic driver {:pic "/Users/huangyesheng/Documents/pics/20180327/1522159074936.png" :desc "1111"})
 
 #_(add-item {:pic "/Users/huangyesheng/Documents/pics/20171102/1509628939329.png" :desc "ddddd" :link "https://detail.tmall.com/item.htm?id=536273268186" :title "wwww"} 6)
 
@@ -163,7 +163,7 @@
   #_(auto-fill-article driver grap/ddd))
 
 
-(defn run [user]
+#_(defn run [user]
   (let [mydriver (tdriver/create-chrome-driver)
         links (read-data-from-txt config/url-data)
         flist (for [link links] (future (grap/product-item-info link)))]

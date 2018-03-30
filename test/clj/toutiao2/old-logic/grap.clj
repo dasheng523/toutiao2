@@ -75,7 +75,7 @@
     path))
 
 (defn- download-toutiao-piture [url]
-  (let [filename (str (time-base-dir config/download-base-path) (generate-filename ".png"))]
+  (let [filename (str (time-base-dir (config/get-download-path)) (generate-filename ".png"))]
     (io/make-parents filename)
     (println (str "downloading image: " url))
     (try

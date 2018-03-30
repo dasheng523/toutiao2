@@ -9,7 +9,7 @@
 
 
 (defn- get-driver-path []
-  (if (= "win" config/platform)
+  (if (config/isWindows?)
     "driver/chromedriver.exe"
     "driver/chromedriver"))
 
