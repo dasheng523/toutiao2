@@ -27,7 +27,7 @@
      (println page)
      (lazy-seq (concat result
                        (if (> totalpage pagenum)
-                         (all-customer (+ page 1)))))))
+                         (all-customers (+ page 1)))))))
   ([]
    (all-customers 1)))
 
@@ -35,7 +35,7 @@
   ([]
    (all-products 1))
   ([page]
-   (let [req {"PageSize" 500
+   (let [req {"PageSize" 1500
               "PageNumber" page
               "RequestEntity" {"ITMREF_0" ""}
               "Token" "ave40@SAGE"}
@@ -49,8 +49,9 @@
                          (all-products (+ page 1))))))))
 
 
+
 #_(utils/save-to-excel
-   (take 200 (all-customers))
+   (take 58888 (all-customers))
    "g:/listdata/customers.xlsx")
 
 #_(utils/save-to-excel
