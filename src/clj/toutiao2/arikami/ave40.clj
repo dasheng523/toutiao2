@@ -16,7 +16,7 @@
 
 (defn all-customers
   ([page]
-   (let [req {"PageSize" 500
+   (let [req {"PageSize" 5
               "PageNumber" page
               "RequestEntity" {"REP_0" ""}
               "Token" "ave40@SAGE"}
@@ -53,6 +53,7 @@
 #_(utils/save-to-excel
    (take 58888 (all-customers))
    "g:/listdata/customers.xlsx")
+
 
 #_(utils/save-to-excel
  (take 200 (all-products))

@@ -55,8 +55,9 @@
 
 (defn fetch-atlas-pic [content]
   (-> content
-      (->> (re-find #"sub_images\":([\s\S]+?),\"max_img_width"))
+      (->> (re-find #"sub_images\\\":([\s\S]+?),\\\"max_img_width"))
       second
+      (str/replace #"\\" "")
       (json/parse-string true)
       (->> (map :url))))
 
@@ -109,13 +110,48 @@
         figure-list (-> node-tree
                         (enlive/select [:figure])
                         (->> (map parse-info)))
-        pic-list (-> (fetch-atlas-pic (:body (http/get atlas-url)))
-                     (->> (map #(download-toutiao-piture (str "http:" %))))
+        pic-list (-> (fetch-atlas-pic (:body (http/get atlas-url
+                                                       {:headers {"User-Agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36"}})))
+                     (->> (map #(download-toutiao-piture %)))
                      (->> (map change-pic-md5)))
         goods-list (map #(conj %1 {:pic %2}) figure-list pic-list)]
     {:atitle title :goods goods-list}))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-#_(def mm (driver/create-chrome-driver))
-#_(to mm "http://www.51taojinge.com/temai.php?uid=6768100064&count=&str_time=2018-03-25+00%3A01%3A00&end_time=2018-03-26+00%3A11%3A00&orderY=2")
+#_(product-item-info "http://www.51taojinge.com/jinri/temai_content_article.php?id=6169509")
+
+#_(let [url "http://www.51taojinge.com/jinri/temai_content_article.php?id=6169509"
+      node-tree (fetch-to-enlive url)
+      title-selector (create-default-text-selector [:div.tit :h1])
+      toutiao-selector (create-default-href-selector [[:div.container (enlive/nth-child 1)] :span :a])
+      title (-> node-tree title-selector)
+      atlas-url (-> node-tree toutiao-selector)
+      figure-list (-> node-tree
+                      (enlive/select [:figure])
+                      (->> (map parse-info)))
+      pic-list (-> (fetch-atlas-pic (:body (http/get atlas-url)))
+                   #_(->> (map #(download-toutiao-piture %)))
+                   #_(->> (map change-pic-md5)))
+;      goods-list (map #(conj %1 {:pic %2}) figure-list pic-list)
+      ]
+    {})
+
+(def ddd (product-item-info "http://www.51taojinge.com/jinri/temai_content_article.php?id=6169509"))
+
+#_(fetch-atlas-pic (:body (http/get "https://www.toutiao.com/a6536400187760312836/#p=1")))
+
+#_(let [content (slurp "aaaa.txt")]
+  (-> content
+      (->> (re-find #"sub_images\\\":([\s\S]+?),\\\"max_img_width"))
+   ;   second
+      #_(str/replace #"\\" "")
+      #_(json/parse-string true)
+      #_(->> (map :url))))
+
+#_(spit
+   "/Users/huangyesheng/Desktop/aaaa.txt"
+   (:body (http/get "https://www.toutiao.com/a6536400187760312836/#p=1"
+                    {:headers {"User-Agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36"}})))
+
+
