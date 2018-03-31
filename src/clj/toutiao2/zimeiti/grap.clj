@@ -61,9 +61,40 @@
       (json/parse-string true)
       (->> (map :url))))
 
+(defn retry-fetch
+  ([url times]
+   (if (> times 3)
+     nil
+     (try
+       (http/get url
+                 {:headers {"User-Agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36"}})
+       (catch Exception e
+         (retry-fetch url (+ times 1))))))
+  ([url]
+   (retry-fetch url 0)))
+
+(defn retry-download
+  ([url times]
+   (if (> times 3)
+     nil
+     (try
+       (http/get url
+                 {:as :byte-array
+                  :headers {"User-Agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36"}})
+       (catch Exception e
+         (println (str "fail times " times))
+         (retry-fetch url (+ times 1))))))
+  ([url]
+   (retry-download url 0)))
+
+
+
 
 (defn download-file [uri file]
-  (with-open [in (io/input-stream uri)
+  (some-> (retry-download uri)
+          :body
+          (io/copy (io/file file)))
+  #_(with-open [in (io/input-stream uri)
               out (io/output-stream file)]
     (io/copy in out)))
 
@@ -76,6 +107,7 @@
         timestr (tf/unparse cformat (t/now))
         path (str base "/" timestr "/")]
     path))
+
 
 (defn- download-toutiao-piture [url]
   (let [filename (str (time-base-dir (config/get-download-path)) (generate-filename ".png"))]
@@ -93,13 +125,6 @@
     (.write w (rand-int 100000)))
   pic-path)
 
-(defn tupian [path]
-  (doseq [f (-> (file-seq (io/file path))
-                (->> (filter #(> (count (str/split (.getName %) #"\.")) 1))))]
-    (with-open [w (io/writer f :append true)]
-      (.write w (rand-int 100000)))))
-
-
 
 (defn product-item-info [url]
   (let [node-tree (fetch-to-enlive url)
@@ -110,8 +135,7 @@
         figure-list (-> node-tree
                         (enlive/select [:figure])
                         (->> (map parse-info)))
-        pic-list (-> (fetch-atlas-pic (:body (http/get atlas-url
-                                                       {:headers {"User-Agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36"}})))
+        pic-list (-> (fetch-atlas-pic (:body (retry-fetch atlas-url)))
                      (->> (map #(download-toutiao-piture %)))
                      (->> (map change-pic-md5)))
         goods-list (map #(conj %1 {:pic %2}) figure-list pic-list)]
@@ -119,39 +143,3 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-#_(product-item-info "http://www.51taojinge.com/jinri/temai_content_article.php?id=6169509")
-
-#_(let [url "http://www.51taojinge.com/jinri/temai_content_article.php?id=6169509"
-      node-tree (fetch-to-enlive url)
-      title-selector (create-default-text-selector [:div.tit :h1])
-      toutiao-selector (create-default-href-selector [[:div.container (enlive/nth-child 1)] :span :a])
-      title (-> node-tree title-selector)
-      atlas-url (-> node-tree toutiao-selector)
-      figure-list (-> node-tree
-                      (enlive/select [:figure])
-                      (->> (map parse-info)))
-      pic-list (-> (fetch-atlas-pic (:body (http/get atlas-url)))
-                   #_(->> (map #(download-toutiao-piture %)))
-                   #_(->> (map change-pic-md5)))
-;      goods-list (map #(conj %1 {:pic %2}) figure-list pic-list)
-      ]
-    {})
-
-(def ddd (product-item-info "http://www.51taojinge.com/jinri/temai_content_article.php?id=6169509"))
-
-#_(fetch-atlas-pic (:body (http/get "https://www.toutiao.com/a6536400187760312836/#p=1")))
-
-#_(let [content (slurp "aaaa.txt")]
-  (-> content
-      (->> (re-find #"sub_images\\\":([\s\S]+?),\\\"max_img_width"))
-   ;   second
-      #_(str/replace #"\\" "")
-      #_(json/parse-string true)
-      #_(->> (map :url))))
-
-#_(spit
-   "/Users/huangyesheng/Desktop/aaaa.txt"
-   (:body (http/get "https://www.toutiao.com/a6536400187760312836/#p=1"
-                    {:headers {"User-Agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36"}})))
-
-

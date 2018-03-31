@@ -25,7 +25,7 @@
 (defn token->user-id
   "通过token转换userid"
   [token]
-  (cache/get-or-create-live! cache/token-cache token))
+  (cache/get-cache-live! cache/token-cache token))
 
 
 (defn register-facebook

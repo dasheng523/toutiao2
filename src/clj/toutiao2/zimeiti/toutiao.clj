@@ -12,6 +12,7 @@
 
 
 (def sleep-time 1000)
+(def wait-time (* 3600 1000))
 (def driver {})
 
 (defn- read-excel [path cols]
@@ -31,15 +32,6 @@
   (utils/serialize
    (str (config/get-cookies-path) user ".cookies")
    (map #(dissoc % :cookie) (cookies driver))))
-
-
-(defn do-save-cookies [username]
-  (save-cookies driver username))
-
-
-(defn do-recover-cookies [username]
-  (to driver "https://mp.toutiao.com/profile_v2/")
-  (recover-cookies driver username))
 
 
 (defn handle-reset-page [driver]
@@ -64,13 +56,13 @@
   (click driver "ul.pgc-title li:nth-child(3) a")
   (Thread/sleep sleep-time)
   (handle-reset-page driver)
-  (wait-until driver #(exists? % "div.content-wrapper div.upload-bg") (* 3600 1000) 1000))
+  (wait-until driver #(exists? % "div.content-wrapper div.upload-bg") wait-time 1000))
 
 
 
 (defn open-toutiao [driver user]
   (to driver "https://mp.toutiao.com/profile_v2/")
-  (wait-until driver #(= (title %) "主页 - 头条号") (* 3600 1000) 1000)
+  (wait-until driver #(= (title %) "主页 - 头条号") wait-time 1000)
   (when (exists? driver "div.btn-wrap span.got-it")
     (click driver "div.btn-wrap span.got-it")))
 
@@ -81,23 +73,41 @@
   (Thread/sleep sleep-time)
   (click driver (str "div.pagelet-figure-gallery-item:last-child div.gallery-action i.icon-delete")))
 
+(defn add-pic [driver {:keys [pic desc]}]
+  (Thread/sleep (* 2 sleep-time))
+  (when pic
+    (if (exists? driver "div.upload-btn button.pgc-button")
+      (click driver "div.upload-btn button.pgc-button")
+      (click driver "div.figure-state button.figure-add-btn"))
+    (send-keys driver "div.upload-handler input" pic)
+    (wait-until driver
+                #(str/includes? (html % "div.drag-tip") "完成")
+                wait-time 1000)
+    (click driver "div.button-group button.confirm-btn")
+    (Thread/sleep sleep-time)
+    (input-text driver (str "div.content-wrapper div.pagelet-figure-gallery-item:last-child div.gallery-txt textarea") desc)
+    (wait-until driver
+                #(not (exists? % "div.pgc-dialog"))
+                wait-time 500)))
 
 (defn add-item [driver {:keys [pic link title desc]}]
   (Thread/sleep sleep-time)
   (when pic
-    (if (exists? driver "div.content-wrapper div.upload-bg")
+    (if (exists? driver "div.upload-btn button.pgc-button")
       (click driver "div.upload-btn button.pgc-button")
       (click driver "div.figure-state button.figure-add-btn"))
     (send-keys driver "div.upload-handler input" pic)
-    (wait-until driver #(exists? % "div.button-group button.confirm-btn") (* 3600 1000) 1000)
-    (wait-until driver #(.startsWith (text % "div.image-footer div.drag-tip") "上传完成") (* 3600 1000) 1000)
+    (wait-until driver #(exists? % "div.button-group button.confirm-btn") wait-time 1000)
+    (wait-until driver #(and (.startsWith (text % "div.image-footer div.drag-tip") "上传完成")
+                             (exists? % "span.success-show"))
+                wait-time 1000)
     (click driver "div.button-group button.confirm-btn")
     (Thread/sleep sleep-time)
     (input-text driver (str "div.content-wrapper div.pagelet-figure-gallery-item:last-child div.gallery-txt textarea") desc)
     (click driver (str "div.content-wrapper div.pagelet-figure-gallery-item:last-child div.gallery-sub-sale span.slink"))
     (input-text driver "input[name=product_url]" link)
     (click driver "span.product-info-fetch")
-    (wait-until driver #(not= "" (value % "div.info-wrap div.product-info-item:nth-child(1) input")) (* 3600 1000) 1000)
+    (wait-until driver #(not= "" (value % "div.info-wrap div.product-info-item:nth-child(1) input")) wait-time 1000)
     (clear driver "div.info-wrap div.product-info-item:nth-child(1) input")
     (input-text driver "div.info-wrap div.product-info-item:nth-child(1) input" title)
     (input-text driver ".tui-input-wrapper textarea[name=recommend_reason]" desc)
@@ -106,34 +116,26 @@
          (exists? driver "div#pgc-add-product div.pgc-dialog div.title")
          (str/includes? (html driver "div#pgc-add-product div.pgc-dialog div.title") "佣金"))
       (handle-no-money driver)
-      (click driver "div.gallery-footer button.confirm-btn"))))
+      (click driver "div.gallery-footer button.confirm-btn"))
+    (wait-until driver
+                #(not (exists? % "div.pgc-dialog"))
+                wait-time 500)))
 
-
-(defn add-pic [driver {:keys [pic desc]}]
-  (Thread/sleep sleep-time)
-  (when pic
-    (if (exists? driver "div.upload-btn button.pgc-button")
-      (click driver "div.upload-btn button.pgc-button")
-      (click driver "div.figure-state button.figure-add-btn"))
-    (send-keys driver "div.upload-handler input" pic)
-    (wait-until driver #(exists? % "div.drag-tip") (* 3600 1000) 1000)
-    #_(wait-until driver #(.startsWith (text % "div.image-footer div.drag-tip") "上传完成") (* 3600 1000) 1000)
-    #_(click driver "div.button-group button.confirm-btn")
-    #_(Thread/sleep sleep-time)
-    #_(input-text driver (str "div.content-wrapper div.pagelet-figure-gallery-item:last-child div.gallery-txt textarea") desc)))
 
 #_(add-pic driver {:pic "/Users/huangyesheng/Documents/pics/20180327/1522159074936.png" :desc "1111"})
 
-#_(add-item {:pic "/Users/huangyesheng/Documents/pics/20171102/1509628939329.png" :desc "ddddd" :link "https://detail.tmall.com/item.htm?id=536273268186" :title "wwww"} 6)
+(defn- remove-duplicate [coll k]
+  (map #(-> % second first)
+       (group-by k coll)))
+
 
 (defn auto-fill-article [driver {:keys [atitle goods]}]
-  (doseq [info goods]
-    (if (= "" (:link info))
-      (add-pic driver info)
-      (add-item driver info)))
+  (doseq [info (take 8 (remove-duplicate
+                        (filter #(not-empty (:link %)) goods)
+                        :link))]
+    (add-item driver info))
   (input-text driver "div.article-title-wrap input" atitle)
-  (click driver "div.pgc-radio label.tui-radio-wrapper:nth-child(2) span.tui-radio-text")
-  #_(click driver "div.figure-footer div.pgc-btn div.tui-btn"))
+  (click driver "div.pgc-radio label.tui-radio-wrapper:nth-child(3) span.tui-radio-text"))
 
 (defn- read-data-from-txt [path]
   (-> path
@@ -144,23 +146,43 @@
 
 
 (defn- wail-for-ready-post [driver]
-  (wait-until driver #(and
-                       (exists? % "a.menu_item.selected")
-                       (str/includes? (html % "a.menu_item.selected") "内容管理"))
-              (* 3600 1000)
+  (wait-until driver
+              #(str/includes? (html % "li.category-item.selected") "全部图文")
+              wait-time
               1000))
+
+(defonce mydriver (atom {}))
 
 (defn open-chrome
   "打开头条"
   []
-  (def driver (tdriver/create-chrome-driver))
-  (to driver "https://mp.toutiao.com/profile_v2/"))
+  (reset! mydriver (tdriver/create-chrome-driver))
+  (to @mydriver "https://mp.toutiao.com/profile_v2/"))
 
+
+(defn do-save-cookies [username]
+  (save-cookies @mydriver username))
+
+
+(defn do-recover-cookies [username]
+  (recover-cookies @mydriver username)
+  (to @mydriver "https://mp.toutiao.com/profile_v2/"))
 
 
 (defn doautorun [urls]
-  (enter-post-page driver)
-  #_(auto-fill-article driver grap/ddd))
+  (let [flist (for [url urls]
+                (future (doall (grap/product-item-info url))))]
+    (doseq [fut flist]
+        (enter-post-page @mydriver)
+        (auto-fill-article @mydriver @fut)
+        (wail-for-ready-post @mydriver))))
+
+
+#_(doautorun ["http://www.51taojinge.com/jinri/temai_content_article.php?id=1144204&check_id=2"])
+
+
+
+#_(grap/product-item-info (first ["http://www.51taojinge.com/jinri/temai_content_article.php?id=1144204&check_id=2"]))
 
 
 #_(defn run [user]

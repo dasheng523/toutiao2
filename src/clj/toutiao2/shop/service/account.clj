@@ -16,7 +16,7 @@
       (->fail (tr lang :auth-fail)))))
 
 
-(token/init-token! "111")
-(token/get-lang "111")
-(auth "dasheng523@163.com" "123456" "111")
+#_(token/init-token! "111")
+#_(token/get-lang "111")
+#_(auth "dasheng523@163.com" "123456" "111")
 
