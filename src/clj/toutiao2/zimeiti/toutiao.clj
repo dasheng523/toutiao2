@@ -8,7 +8,8 @@
             [toutiao2.zimeiti.config :as config]
             [toutiao2.zimeiti.driver :as tdriver]
             [toutiao2.zimeiti.grap :as grap])
-  (:import (java.text SimpleDateFormat)))
+  (:import (java.text SimpleDateFormat)
+           (org.openqa.selenium.interactions Actions)))
 
 
 (def sleep-time 1000)

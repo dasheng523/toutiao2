@@ -4,5 +4,3 @@
 
 (def dir "/Users/huangyesheng/Desktop")
 
-(grap/tupian (str dir "/aa/bbb"))
-
