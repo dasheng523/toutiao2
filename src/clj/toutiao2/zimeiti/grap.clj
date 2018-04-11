@@ -19,9 +19,15 @@
       (StringReader.)
       (enlive/html-resource)))
 
+(defn- taojinge-http-get [url]
+  (http/get url
+            {:headers {"User-Agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36"
+                       "Cookie" "UM_distinctid=16262379b3bf9-06e958885e0741-33627805-fa000-16262379b3c5db; _ga=GA1.2.1638181382.1522066357; Hm_lvt_db0fa8577f361832e3b979f920bee38e=1522066355,1522471452,1522482376,1522851065; _gid=GA1.2.1308237853.1522913476; CNZZDATA1261342782=137057632-1522065029-null%7C1523105603; token=3ae0baad98350deedd4591b95ff9b6d03d04c5a1; uid=8174; phone=18926490312; viptime=1524789110"}
+             :debug true}))
+
 (defn- fetch-to-enlive [url]
   (-> url
-      (http/get)
+      (http/get {:headers {"User-Agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36"}})
       :body
       (change-string-to-nodes)))
 
@@ -127,7 +133,10 @@
 
 
 (defn product-item-info [url]
-  (let [node-tree (fetch-to-enlive url)
+  (let [node-tree (-> url
+                      taojinge-http-get
+                      :body
+                      (change-string-to-nodes))
         title-selector (create-default-text-selector [:div.tit :h1])
         toutiao-selector (create-default-href-selector [[:div.container (enlive/nth-child 1)] :span :a])
         title (-> node-tree title-selector)
@@ -141,5 +150,23 @@
         goods-list (map #(conj %1 {:pic %2}) figure-list pic-list)]
     {:atitle title :goods goods-list}))
 
+#_(let [url "http://www.51taojinge.com/jinri/temai_content_article.php?id=1170322&check_id=2"
+      node-tree (-> url
+                    taojinge-http-get
+                    :body
+                    (change-string-to-nodes))
+      title-selector (create-default-text-selector [:div.tit :h1])
+      toutiao-selector (create-default-href-selector [[:div.container (enlive/nth-child 1)] :span :a])
+      title (-> node-tree title-selector)
+      atlas-url (-> node-tree toutiao-selector)
+      figure-list (-> node-tree
+                      (enlive/select [:figure])
+                      (->> (map parse-info)))
+      pic-list (-> (fetch-atlas-pic (:body (retry-fetch atlas-url)))
+                   (->> (map #(download-toutiao-piture %)))
+                   (->> (map change-pic-md5)))
+      goods-list (map #(conj %1 {:pic %2}) figure-list pic-list)]
+  {:atitle title :goods goods-list})
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#_(taojinge-http-get "http://www.51taojinge.com/jinri/temai_content_article.php?id=1170322&check_id=2")

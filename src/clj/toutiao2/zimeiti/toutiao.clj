@@ -106,34 +106,35 @@
     (input-text driver (str "div.content-wrapper div.pagelet-figure-gallery-item:last-child div.gallery-txt textarea") desc)
     (click driver (str "div.content-wrapper div.pagelet-figure-gallery-item:last-child div.gallery-sub-sale span.slink"))
     (input-text driver "input[name=product_url]" link)
+    (Thread/sleep sleep-time)
     (click driver "span.product-info-fetch")
     (wait-until driver #(not= "" (value % "div.info-wrap div.product-info-item:nth-child(1) input")) wait-time 1000)
     (clear driver "div.info-wrap div.product-info-item:nth-child(1) input")
     (input-text driver "div.info-wrap div.product-info-item:nth-child(1) input" title)
     (input-text driver ".tui-input-wrapper textarea[name=recommend_reason]" desc)
     (Thread/sleep sleep-time)
-    (if (and
-         (exists? driver "div#pgc-add-product div.pgc-dialog div.title")
-         (str/includes? (html driver "div#pgc-add-product div.pgc-dialog div.title") "佣金"))
-      (handle-no-money driver)
-      (click driver "div.gallery-footer button.confirm-btn"))
+    (click driver "div.gallery-footer button.confirm-btn")
     (wait-until driver
                 #(not (exists? % "div.pgc-dialog"))
                 wait-time 500)))
 
-
-#_(add-pic driver {:pic "/Users/huangyesheng/Documents/pics/20180327/1522159074936.png" :desc "1111"})
+#_(def aa (grap/product-item-info "http://www.51taojinge.com/jinri/temai_content_article.php?id=1144085&check_id=2"))
+#_(add-item @mydriver (first
+                     (remove-duplicate
+                      (filter #(not-empty (:link %)) (:goods aa))
+                      :link)))
 
 (defn- remove-duplicate [coll k]
   (map #(-> % second first)
-       (group-by k coll)))
+       (group-by #(if (empty? (k %)) % (k %)) coll)))
 
 
 (defn auto-fill-article [driver {:keys [atitle goods]}]
-  (doseq [info (take 8 (remove-duplicate
-                        (filter #(not-empty (:link %)) goods)
-                        :link))]
-    (add-item driver info))
+  (doseq [info (take 9 (remove-duplicate goods :link))]
+    (println info)
+    (if (empty? (:link info))
+      (add-pic driver info)
+      (add-item driver info)))
   (input-text driver "div.article-title-wrap input" atitle)
   (click driver "div.pgc-radio label.tui-radio-wrapper:nth-child(3) span.tui-radio-text"))
 
@@ -149,7 +150,8 @@
   (wait-until driver
               #(str/includes? (html % "li.category-item.selected") "全部图文")
               wait-time
-              1000))
+              1000)
+  (Thread/sleep sleep-time))
 
 (defonce mydriver (atom {}))
 
@@ -178,11 +180,16 @@
         (wail-for-ready-post @mydriver))))
 
 
-#_(doautorun ["http://www.51taojinge.com/jinri/temai_content_article.php?id=1144204&check_id=2"])
+
+
+#_(doall (grap/product-item-info "http://www.51taojinge.com/jinri/temai_content_article.php?id=1144204&check_id=2"))
+
+#_(doautorun ["http://www.51taojinge.com/jinri/temai_content_article.php?id=1145969&check_id=2"
+            "http://www.51taojinge.com/jinri/temai_content_article.php?id=1144085&check_id=2"])
 
 
 
-#_(grap/product-item-info (first ["http://www.51taojinge.com/jinri/temai_content_article.php?id=1144204&check_id=2"]))
+#_(grap/product-item-info "http://www.51taojinge.com/jinri/temai_content_article.php?id=1170322&check_id=2")
 
 
 #_(defn run [user]
@@ -198,4 +205,13 @@
         (auto-fill-article mydriver @fut)
         (wail-for-ready-post mydriver)
         (enter-post-page mydriver)))))
+
+
+
+
+
+
+
+
+
 

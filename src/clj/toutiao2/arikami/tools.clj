@@ -433,7 +433,7 @@
   (let [dir (if (= mode "test")
               (-> env :arikami-test-root)
               (-> env :arikami-root))]
-    (shell/sh "php" "bin/magento" "indexer:reindex" :dir dir)))
+    (shell/sh "php" "bin/magento" "ok:urlrewrites:regenerate" :dir dir)))
 
 (defn flush-cache [mode]
   (let [dir (if (= mode "test")
