@@ -4,7 +4,6 @@
             [net.cgrand.enlive-html :as enlive]
             [cheshire.core :as json]
             [clojure.java.io :as io]
-            [clojure.tools.logging :as log]
             [clj-time.core :as t]
             [clj-time.format :as tf]
             [clojure.tools.logging :as log]

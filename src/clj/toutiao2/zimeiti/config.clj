@@ -1,17 +1,6 @@
 (ns toutiao2.zimeiti.config
   (:require [clojure.string :as str]
-            [toutiao2.config :refer [env]]))
-
-(def cos
-  {:name (System/getProperty "os.name"),
-   :version (System/getProperty "os.version"),
-   :arch (System/getProperty "os.arch")})
-
-(defn isWindows? []
-  (str/includes? (str/lower-case (:name cos)) "window"))
-
-(defn isMac? []
-  (str/includes? (str/lower-case (:name cos)) "mac"))
+            [toutiao2.config :refer [env isWindows? isMac?]]))
 
 (defn get-download-path []
   (if (isWindows?)

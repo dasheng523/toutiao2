@@ -124,6 +124,13 @@
            (enlive/text n))
          (enlive/select nodes node-select))))
 
+(defn html-selector
+  [nodes node-select]
+  (when-let [find-rs (enlive/select nodes node-select)]
+    (-> find-rs
+        (enlive/emit*)
+        (str/join))))
+
 (defn href-selector
   "取第一个匹配结果的URL"
   [nodes node-select]
