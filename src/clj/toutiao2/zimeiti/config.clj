@@ -2,16 +2,16 @@
   (:require [clojure.string :as str]
             [toutiao2.config :refer [env]]))
 
-(def *cos*
+(def cos
   {:name (System/getProperty "os.name"),
    :version (System/getProperty "os.version"),
    :arch (System/getProperty "os.arch")})
 
 (defn isWindows? []
-  (str/includes? (str/lower-case (:name *cos*)) "window"))
+  (str/includes? (str/lower-case (:name cos)) "window"))
 
 (defn isMac? []
-  (str/includes? (str/lower-case (:name *cos*)) "mac"))
+  (str/includes? (str/lower-case (:name cos)) "mac"))
 
 (defn get-download-path []
   (if (isWindows?)

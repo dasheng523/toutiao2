@@ -5,6 +5,7 @@
             [toutiao2.zimeiti.config :as config])
   (:import (org.openqa.selenium.remote DesiredCapabilities)
            (org.openqa.selenium.chrome ChromeDriver)
+           (org.openqa.selenium.interactions Actions)
            (org.openqa.selenium Proxy)))
 
 

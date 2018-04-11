@@ -8,9 +8,7 @@
             [clj-time.core :as t]
             [clj-time.format :as tf]
             [clojure.tools.logging :as log]
-            [clj-webdriver.taxi :refer :all]
-            [toutiao2.zimeiti.config :as config]
-            [toutiao2.zimeiti.driver :as driver])
+            [toutiao2.zimeiti.config :as config])
   (:import (java.io StringReader)))
 
 

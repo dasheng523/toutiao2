@@ -2,7 +2,7 @@
   (:require
    [toutiao2.shop.logic.db :refer :all]
    [toutiao2.utils :as utils]
-   [honeysql.helpers :refer :all :as helpers]
+   [honeysql.helpers :refer :all :as helpers :exclude [update]]
    [honeysql.core :as sql]
    [clojure.java.jdbc :as jdbc]
    [clojure.tools.logging :as log]))
