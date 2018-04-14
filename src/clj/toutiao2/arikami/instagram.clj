@@ -45,20 +45,26 @@
       (set-cookie driver coo))))
 
 
-(defn post-image [driver image-path]
-  (js-execute driver "HTMLInputElement.prototype.click = function() {if(this.type !== 'file') HTMLElement.prototype.click.call(this);}")
+(defn post-image [driver image-path desc]
+  (js-execute driver "document.querySelector('form._7xah4 input._l8al6').disabled=true;")
   (click driver {:tag :div :class "_crp8c coreSpriteFeedCreation"})
-  (upload-file driver {:css "form._7xah4 input._l8al6"} "f:/20180414122806.png")
+  (upload-file driver {:css "form._7xah4 input._l8al6"} image-path)
+  (wait-exists driver {:tag :button :class "_9glb8"})
   (click driver {:tag :button :class "_9glb8"})
-  (fill-human driver {:css "textarea._qlp0q"} "hello world")
+  (wait-exists driver {:css "textarea._qlp0q"})
+  (fill-human driver {:css "textarea._qlp0q"} desc)
   (click driver {:css "button._9glb8"}))
 
-(def driver (instagram-driver))
-(instagram-home driver)
-(save-cookies driver "dasheng523@163.com")
-(recovery-cookies driver "dasheng523@163.com")
-(instagram-home driver)
+#_(js-execute driver "document.querySelector('form._7xah4 input._l8al6').disabled=true;")
+#_(click driver {:tag :div :class "_crp8c coreSpriteFeedCreation"})
+#_(upload-file driver {:css "form._7xah4 input._l8al6"} "f:/20180414122806.png")
 
+#_(def driver (instagram-driver))
+#_(instagram-home driver)
+#_(save-cookies driver "dasheng523@163.com")
+#_(recovery-cookies driver "dasheng523@163.com")
+#_(instagram-home driver)
+#_(post-image driver "f:/20180414122806.png" "hello")
 
 
 
