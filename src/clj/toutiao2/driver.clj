@@ -3,12 +3,12 @@
             [clojure.java.io :as io]
             [toutiao2.config :refer [env isWindows?]]))
 
-(defn- get-chromedriver-path []
+(defn get-chromedriver-path []
   (if (isWindows?)
     "driver/chromedriver.exe"
     "driver/chromedriver"))
 
-(defn- get-firefox-path []
+(defn get-firefox-path []
   (if (isWindows?)
     "driver/geckodriver.exe"
     "driver/geckodriver"))

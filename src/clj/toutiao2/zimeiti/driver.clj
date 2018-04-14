@@ -2,7 +2,7 @@
   (:require [clj-webdriver.taxi :refer :all]
             [clj-webdriver.driver :refer [init-driver]]
             [clojure.java.io :as io]
-            [toutiao2.zimeiti.config :as config])
+            [toutiao2.config :as config])
   (:import (org.openqa.selenium.remote DesiredCapabilities)
            (org.openqa.selenium.chrome ChromeDriver)
            (org.openqa.selenium.interactions Actions)

@@ -1,6 +1,5 @@
 (ns toutiao2.zimeiti.toutiao
   (:require [clj-webdriver.taxi :refer :all]
-            [cheshire.core :as json]
             [dk.ative.docjure.spreadsheet :as sheet]
             [toutiao2.utils :as utils]
             [clojure.string :as str]

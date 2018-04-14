@@ -46,7 +46,7 @@
                  [slingshot "0.12.2"]                       ; 异常处理
                  [day8.re-frame/http-fx "0.1.4"]            ; 前端http
                  [clj-webdriver/clj-webdriver "0.7.2"]
-                 [org.seleniumhq.selenium/selenium-java "2.47.1"]
+                 [org.seleniumhq.selenium/selenium-java "3.4.0"]
                  [etaoin "0.2.1"] ; 跟webdriver一样，是操作浏览器的
                  [clj-http "3.7.0"]
                  [enlive "1.1.6"]
