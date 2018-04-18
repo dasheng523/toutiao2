@@ -4,16 +4,15 @@
             [etaoin.keys :as ek]
             [cheshire.core :as json]
             [clojure.java.io :as io]
-            [clj-webdriver.taxi :as d]
             [toutiao2.config :refer [isWindows?]]))
 
 
+"--proxy-server=socks5://127.0.0.1:55555"
 (defn- instagram-driver []
   (chrome
    {:path-driver (.getPath (io/resource (tdriver/get-chromedriver-path)))
     :size [375 667]
-    :capabilities {:chromeOptions {:args ["--proxy-server=socks5://127.0.0.1:55555"
-                                          "--user-agent=Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Mobile Safari/537.36"]}}}))
+    :capabilities {:chromeOptions {:args ["--user-agent=Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Mobile Safari/537.36"]}}}))
 
 
 (defn instagram-home [driver]
@@ -31,7 +30,7 @@
 (defn- get-cookies-path []
   (if (isWindows?)
     "g:/coo/"
-    "/Users/"))
+    "/Users/huangyesheng/Documents/cookies"))
 
 (defn save-cookies [driver user]
   (let [coo (get-cookies driver)]
@@ -50,10 +49,26 @@
   (click driver {:tag :div :class "_crp8c coreSpriteFeedCreation"})
   (upload-file driver {:css "form._7xah4 input._l8al6"} image-path)
   (wait-exists driver {:tag :button :class "_9glb8"})
-  (click driver {:tag :button :class "_9glb8"})
-  (wait-exists driver {:css "textarea._qlp0q"})
-  (fill-human driver {:css "textarea._qlp0q"} desc)
-  (click driver {:css "button._9glb8"}))
+  (with-wait 2
+    (if (exists? driver {:css "button._j7nl9"})
+      (click driver {:css "button._j7nl9"}))
+    (click driver {:tag :button :class "_9glb8"})
+    (wait-exists driver {:css "textarea._qlp0q"})
+    (fill-human driver {:css "textarea._qlp0q"} desc)
+    (click driver {:css "button._9glb8"})))
+
+(defn follow-user-index [driver index]
+  (when (exists? driver {:css (str "li._ezgzd:nth-child(" index ")")})
+    (scroll-query driver {:css (str "li._ezgzd:nth-child(" index ")")})
+    (click driver [{:css (str "li._ezgzd:nth-child(" index ") a")}])
+    (wait-exists driver {:css "span._ov9ai"})
+    (wait 3)
+    (when (exists? driver {:css "span._ov9ai button._gexxb"})
+      (click driver {:css "span._ov9ai button._gexxb"})
+      (wait 2))
+    (back driver)
+    (wait 2)
+    (recur driver (+ index 1))))
 
 #_(js-execute driver "document.querySelector('form._7xah4 input._l8al6').disabled=true;")
 #_(click driver {:tag :div :class "_crp8c coreSpriteFeedCreation"})
@@ -64,7 +79,8 @@
 #_(save-cookies driver "dasheng523@163.com")
 #_(recovery-cookies driver "dasheng523@163.com")
 #_(instagram-home driver)
-#_(post-image driver "f:/20180414122806.png" "hello")
+#_(post-image driver "/Users/huangyesheng/Desktop/222.jpg" "#skirt")
+#_(follow-user-index 3)
 
 
 

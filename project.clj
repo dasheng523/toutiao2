@@ -64,8 +64,8 @@
                  [flake "0.4.5"]                            ; 生成唯一字符串
                  [hikari-cp "2.2.0"]                        ; 数据库连接池
                  [tongue "0.2.4"]                           ; i18n
-                 #_[opencv/opencv "3.3.1"]
-                 #_[opencv/opencv-native "3.3.1"]]
+                 [opencv/opencv "3.3.1"]
+                 [opencv/opencv-native "3.3.1"]]
 
   :min-lein-version "2.0.0"
 

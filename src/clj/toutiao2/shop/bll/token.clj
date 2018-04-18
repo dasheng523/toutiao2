@@ -1,12 +1,13 @@
 (ns toutiao2.shop.bll.token
-  (:require [toutiao2.shop.cache :as cache]))
+  (:require [toutiao2.cache :as cache]
+            [toutiao2.shop.cache :as scache]))
 
 
 (defn- get-token-data [k token]
-  (cache/get-cache-live! cache/token-cache (str k ":" token)))
+  (cache/get-cache-live! scache/token-cache (str k ":" token)))
 
 (defn set-token-data! [k v token]
-  (cache/set-cache! cache/token-cache (str k ":" token) v))
+  (cache/set-cache! scache/token-cache (str k ":" token) v))
 
 (defmacro defget
   [& ks]
@@ -32,6 +33,6 @@
 (defn init-token! [token]
   (let [default (default-token-data)]
     (doseq [k (keys default)]
-      (cache/set-cache! cache/token-cache
+      (cache/set-cache! scache/token-cache
                         (str k token)
                         (get default k)))))
