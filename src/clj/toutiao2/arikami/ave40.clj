@@ -35,7 +35,7 @@
   ([]
    (all-products 1))
   ([page]
-   (let [req {"PageSize" 1500
+   (let [req {"PageSize" 500
               "PageNumber" page
               "RequestEntity" {"ITMREF_0" ""}
               "Token" "ave40@SAGE"}
@@ -56,5 +56,5 @@
 
 
 #_(utils/save-to-excel
- (take 200 (all-products))
+ (take 20000 (all-products))
  "g:/listdata/products.xlsx")
