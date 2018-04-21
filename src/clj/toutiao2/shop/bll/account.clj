@@ -3,7 +3,8 @@
    [toutiao2.shop.logic.caccount :as calogic]
    [toutiao2.shop.logic.facebookaccount :as fklogic]
    [toutiao2.shop.logic.user :as userlogic]
-   [toutiao2.shop.cache :as cache]
+   [toutiao2.cache :as cache]
+   [toutiao2.shop.cache :as scache]
    [toutiao2.utils :as utils]))
 
 (defn register
@@ -25,7 +26,7 @@
 (defn token->user-id
   "通过token转换userid"
   [token]
-  (cache/get-cache-live! cache/token-cache token))
+  (cache/get-cache-live! scache/token-cache token))
 
 
 (defn register-facebook
