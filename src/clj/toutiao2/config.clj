@@ -21,3 +21,13 @@
 
 (defn isMac? []
   (str/includes? (str/lower-case (:name cos)) "mac"))
+
+(defn get-download-path []
+  (if (isWindows?)
+    (-> env :win-download-path)
+    (-> env :mac-download-path)))
+
+(defn get-cookies-path []
+  (if (isWindows?)
+    (-> env :win-cookies-path)
+    (-> env :mac-cookies-path)))
