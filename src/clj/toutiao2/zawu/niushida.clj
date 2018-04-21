@@ -131,6 +131,34 @@
   (weibo-search-current-page driver))
 
 
+(defn zhihu-search-current-page
+  ([driver index]
+   (let [node [{:tag :div :class "List-item" :index index}]
+         readmore (conj node {:tag :button :class "Button ContentItem-more Button--plain"})
+         comment (into node [{:tag :div :class "ContentItem-actions"}
+                             {:tag :button}])]
+     (when (and (exists? driver node)
+                (< index 10))
+       (scroll-query driver node)
+       (when (exists? driver readmore)
+         (click driver readmore)
+         (wait 1))
+       (when (exists? driver comment)
+         (click driver comment)
+         (wait 2))
+       (handle-content (get-element-text driver node))
+       (recur driver (+ index 1)))))
+  ([driver]
+   (zhihu-search-current-page driver 1)))
+
+(let [dd (into [{:tag :div :class "List-item" :index 1}] [{:tag :div :class "ContentItem-actions"}
+                                                          {:tag :button}])]
+  (click driver dd))
+
+
+
+(zhihu-search-current-page driver)
+
 (def driver (search-driver))
 (go driver "https://zhihu.com/")
 
