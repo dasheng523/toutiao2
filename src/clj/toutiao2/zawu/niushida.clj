@@ -76,25 +76,33 @@
         (recur (+ i 1))))))
 
 
+(defn baidu-current-page
+  ([driver index]
+   (let [node [{:tag :div :class "result c-container " :index index}
+               {:tag :h3}
+               {:tag :a}]]
+     (when (exists? driver node)
+       #_(scroll-query driver node)
+       (click driver node)
+       (wait 1)
+       (switch-window driver (last (get-window-handles driver)))
+       (wait 5)
+       (handle-content ((dispatch-content-fn (get-url driver)) driver))
+       (close-window driver)
+       (switch-window driver (first (get-window-handles driver)))
+       (recur driver (+ index 1)))))
+  ([driver]
+   (baidu-current-page driver 1)))
+
 (defn baidu-search [driver searchkey]
   (go driver "https://www.baidu.com")
-  (fill driver {:css "input.s_ipt"} searchkey ek/enter))
-
-(defn baidu-current-page [driver index]
-  (let [node [{:tag :div :class "result c-container " :index index}
-              {:tag :h3}
-              {:tag :a}]]
-    (when (exists? driver node)
-      (scroll-query driver node)
-      (click driver node)
-      (wait 1)
-      (switch-window driver (last (get-window-handles driver)))
-      (wait 5)
-      (handle-content ((dispatch-content-fn (get-url driver)) driver))
-      (close-window driver)
-      (switch-window driver (first (get-window-handles driver)))
-      (recur driver (+ index 1)))))
-
+  (fill driver {:css "input.s_ipt"} searchkey ek/enter)
+  (wait 2)
+  (dotimes [n 5]
+    (baidu-current-page driver)
+    (when (exists? driver {:css "div#page > a:last-child"})
+      (click driver {:css "div#page > a:last-child"})
+      (wait 2))))
 
 
 (defn save-cookies [driver user domain]
@@ -111,7 +119,7 @@
     (doseq [coo fcookies]
       (set-cookie driver coo))))
 
-(defn login-weibo [username password]
+(defn login-weibo [driver username password]
   (fill-human driver {:css "input#loginname"} username)
   (fill-human driver {:tag :input :name "password"} password)
   (click driver {:css "div.login_btn a"}))
@@ -173,8 +181,26 @@
   (zhihu-search-current-page driver))
 
 
+(defn tieba-page [driver index]
+  (let [node [{:tag :ul :id "thread_list"}
+              {:tag :li :class " j_thread_list clearfix" :index index}
+              {:css ".threadlist_lz a"}]]
+    (when (and (exists? driver node))
+      #_(scroll-query driver node)
+      (click driver node)
+      (wait 2)
+      (let [txtnode {:css ".left_section"}]
+        (when (exists? driver txtnode)
+          (handle-content (get-element-text driver txtnode))))
+      (handle-content (get-element-text driver node))
+      (recur driver (+ index 1)))))
+
+(click driver {:css ".l_posts_num a:last-child"})
+
 (def driver (search-driver))
-(go driver "https://zhihu.com/")
+(go driver "http://tieba.baidu.com/p/2860614426")
+#_(go driver "https://zhihu.com/")
+
 
 
 #_(save-cookies driver "yesheng" "zhihu")
