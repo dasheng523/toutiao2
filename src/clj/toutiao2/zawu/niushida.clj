@@ -9,12 +9,25 @@
             [clojure.string :as str]
             [toutiao2.config :refer [isWindows?]]))
 
+(defn- badwords []
+  (let [path (if (isWindows?)
+               (-> config/env :win-dired-path)
+               (-> config/env :mac-dired-path))]
+    (-> (slurp (str path "/badwords.txt"))
+        (str/split #"\n")
+        (->> (remove nil?)))))
+
+(defn- has-badwords? [s]
+  (some #(str/includes? s %)
+        (badwords)))
+
 
 (def content-chan (async/chan))
 
 (defn handle-content [content]
-  (println content)
-  (async/put! content-chan content))
+  (if (has-badwords? content)
+    (println content)
+    (async/put! content-chan content)))
 
 (defn- search-driver []
   (chrome
@@ -134,37 +147,37 @@
 (defn zhihu-search-current-page
   ([driver index]
    (let [node [{:tag :div :class "List-item" :index index}]
-         readmore (conj node {:tag :button :class "Button ContentItem-more Button--plain"})
-         comment (into node [{:tag :div :class "ContentItem-actions"}
-                             {:tag :button}])]
+         readmore (into node [{:css ".RichContent .ContentItem-more"}])
+         comment (into node [{:css ".ContentItem"}
+                             {:css ".RichContent .ContentItem-action"}])]
      (when (and (exists? driver node)
                 (< index 10))
        (scroll-query driver node)
+       (when (and (exists? driver comment)
+                  (str/includes? (get-element-text driver comment)
+                                 "条"))
+         (click driver comment)
+         (wait 2))
        (when (exists? driver readmore)
          (click driver readmore)
          (wait 1))
-       (when (exists? driver comment)
-         (click driver comment)
-         (wait 2))
        (handle-content (get-element-text driver node))
        (recur driver (+ index 1)))))
   ([driver]
    (zhihu-search-current-page driver 1)))
 
-(let [dd (into [{:tag :div :class "List-item" :index 1}] [{:tag :div :class "ContentItem-actions"}
-                                                          {:tag :button}])]
-  (click driver dd))
+(defn zhihu-search [driver kword]
+  (fill-human driver {:css ".SearchBar-input .Input"} "奔驰")
+  (fill driver {:css ".SearchBar-input .Input"} ek/enter)
+  (wait 3)
+  (zhihu-search-current-page driver))
 
-
-
-(zhihu-search-current-page driver)
 
 (def driver (search-driver))
 (go driver "https://zhihu.com/")
 
-(fill-human driver {:css ".SearchBar-input .Input"} "奔驰")
-(fill driver {:css ".SearchBar-input .Input"} ek/enter)
 
+#_(save-cookies driver "yesheng" "zhihu")
 #_(recover-cookies driver "yesheng" "zhihu")
 
 #_(search-weibo driver "美女")

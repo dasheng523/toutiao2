@@ -23,7 +23,9 @@
  ; 头条
  :win-download-path "e:/ttt/download"
  :win-cookies-path "e:/ttt/cookies"
+ :win-dired-path "e:/ttt"
 
  :mac-download-path "/Users/huangyesheng/Documents/pics"
  :mac-cookies-path "/Users/huangyesheng/Documents/cookies/"
+ :mac-dired-path "/Users/huangyesheng/Documents"
 }
