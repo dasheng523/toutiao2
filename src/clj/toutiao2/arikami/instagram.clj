@@ -11,8 +11,9 @@
 (defn- instagram-driver []
   (chrome
    {:path-driver (.getPath (io/resource (tdriver/get-chromedriver-path)))
-    :size [375 667]
-    :capabilities {:chromeOptions {:args ["--user-agent=Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Mobile Safari/537.36"]}}}))
+    ;:size [375 667]
+    :capabilities {:chromeOptions {:args ["--user-agent=Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Mobile Safari/537.36"
+                                          "--window-size=375,667"]}}}))
 
 
 (defn instagram-home [driver]

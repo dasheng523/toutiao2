@@ -7,13 +7,16 @@
             [cheshire.core :as json]
             [clojure.java.io :as io]
             [clojure.string :as str]
-            [toutiao2.config :refer [isWindows?]]))
+            [toutiao2.config :refer [isWindows?]]
+            [clojure.tools.logging :as log]
+            [slingshot.slingshot :refer [throw+ try+]]))
 
 (defn- badwords []
   (let [path (if (isWindows?)
                (-> config/env :win-dired-path)
                (-> config/env :mac-dired-path))]
     (-> (slurp (str path "/badwords.txt"))
+        (str/replace #"\r" "")
         (str/split #"\n")
         (->> (remove nil?)))))
 
@@ -25,17 +28,28 @@
 (def content-chan (async/chan))
 
 (defn handle-content [content]
-  (if (has-badwords? content)
+  (when (has-badwords? content)
     (println content)
     (async/put! content-chan content)))
+
+(has-badwords? "骗")
+(badwords)
 
 (defn- search-driver []
   (chrome
    {:path-driver (.getPath (io/resource (tdriver/get-chromedriver-path)))
-    :capabilities {}})
+    :args []
+    :args-driver ["--ipc-connection-timeout=1"]
+    :size [1920 800]})
   #_(firefox
    {:path-driver (.getPath (io/resource (tdriver/get-firefox-path)))
     :capabilities {}}))
+
+(defn set-driver-timeout [driver]
+  (with-resp driver :post
+    [:session (:session @driver) :timeouts]
+    {:type "page load" :ms 5000}
+    _))
 
 (defn is-has-texts [source ks]
   (if (empty? ks)
@@ -180,27 +194,49 @@
   (wait 3)
   (zhihu-search-current-page driver))
 
+(defn tieba-content [driver]
+  (if (exists? driver {:css ".p_postlist"})
+    (some-> (get-element-text driver {:css ".p_postlist"})
+            (handle-content)))
+  (when (and (exists? driver {:css ".l_posts_num a:nth-last-child(2)"})
+             (= (get-element-text driver {:css ".l_posts_num a:nth-last-child(2)"}) "下一页"))
+    (click driver {:css ".l_posts_num a:nth-last-child(2)"})
+    (wait 2)
+    (recur driver)))
 
-(defn tieba-page [driver index]
-  (let [node [{:tag :ul :id "thread_list"}
-              {:tag :li :class " j_thread_list clearfix" :index index}
-              {:css ".threadlist_lz a"}]]
-    (when (and (exists? driver node))
-      #_(scroll-query driver node)
-      (click driver node)
-      (wait 2)
-      (let [txtnode {:css ".left_section"}]
-        (when (exists? driver txtnode)
-          (handle-content (get-element-text driver txtnode))))
-      (handle-content (get-element-text driver node))
-      (recur driver (+ index 1)))))
+(defn tieba-page
+  ([driver index]
+   (let [node [{:tag :ul :id "thread_list"}
+               {:tag :li :class " j_thread_list clearfix" :index index}
+               {:css ".threadlist_lz a"}]]
+     (when (and (exists? driver node))
+       (click driver node)
+       (switch-window driver (last (get-window-handles driver)))
+       (wait 2)
+       (tieba-content driver)
+       (close-window driver)
+       (recur driver (+ index 1)))))
+  ([driver]
+   (tieba-page driver 1)))
 
-(click driver {:css ".l_posts_num a:last-child"})
+
+(defn tieba-search [driver kword]
+  (go driver "https://tieba.baidu.com/index.html")
+  (fill-human driver {:tag :input :name "kw1"} kword)
+  (fill driver {:tag :input :name "kw1"} ek/enter))
+
+(tieba-search driver "好未来")
 
 (def driver (search-driver))
-(go driver "http://tieba.baidu.com/p/2860614426")
-#_(go driver "https://zhihu.com/")
 
+(set-driver-timeout driver)
+
+
+
+#_(fill-human driver {:tag :input :id "TANGRAM__PSP_4__userName"} "18938657523")
+#_(fill-human driver {:css "input#TANGRAM__PSP_4__userName"} "111")
+
+#_(go driver "https://zhihu.com/")
 
 
 #_(save-cookies driver "yesheng" "zhihu")
@@ -219,8 +255,5 @@
   (let [detail-node {:css (str ".ImageNewsCardContent > a:nth-child(" i ")")}]
     (exists? driver detail-node)))
 #_(exists? driver {:css ".ImageNewsCardContent:nth-child(3) > a"})
-
-
-
 
 
