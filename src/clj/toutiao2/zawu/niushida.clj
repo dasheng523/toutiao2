@@ -195,10 +195,10 @@
       (handle-content (get-element-text driver node))
       (recur driver (+ index 1)))))
 
-(click driver {:css ".l_posts_num a:last-child"})
+#_(click driver {:css ".l_posts_num a:last-child"})
 
-(def driver (search-driver))
-(go driver "http://tieba.baidu.com/p/2860614426")
+#_(def driver (search-driver))
+#_(go driver "http://tieba.baidu.com/p/2860614426")
 #_(go driver "https://zhihu.com/")
 
 
