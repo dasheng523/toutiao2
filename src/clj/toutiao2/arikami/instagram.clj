@@ -57,24 +57,83 @@
     (fill-human driver {:css "textarea._qlp0q"} desc)
     (click driver {:css "button._9glb8"})))
 
-(defn follow-user-index [driver index]
-  (when (exists? driver {:css (str "li._ezgzd:nth-child(" index ")")})
-    (scroll-query driver {:css (str "li._ezgzd:nth-child(" index ")")})
-    (click driver [{:css (str "li._ezgzd:nth-child(" index ") a")}])
-    (wait-exists driver {:css "span._ov9ai"})
-    (wait 3)
-    (when (exists? driver {:css "span._ov9ai button._gexxb"})
-      (click driver {:css "span._ov9ai button._gexxb"})
-      (wait 2))
-    (back driver)
+(defn follow-user-index
+  ([driver index]
+   (when (and (exists? driver {:css (str "._ezgzd:nth-child(" index ")")})
+              (< index 50))
+     (if (exists? driver {:css (str "._ezgzd:nth-child(" (- index 2) ")")})
+       (scroll-query driver {:css (str "._ezgzd:nth-child(" (- index 2) ")")}))
+     (click driver [{:css (str "._ezgzd:nth-child(" index ") a")}])
+     (wait-exists driver {:css "span._ov9ai"})
+     (wait 3)
+     (when (exists? driver {:css "span._ov9ai button._gexxb"})
+       (click driver {:css "span._ov9ai button._gexxb"})
+       (wait 2))
+     (back driver)
+     (wait 2)
+     (recur driver (+ index 1))))
+  ([driver]
+   (follow-user-index driver 3)))
+
+
+
+(defn do-follow-user [driver]
+  (click driver {:css "._k0d2z:nth-child(2) a"})
+  (wait-exists driver {:css "._6d3hm"})
+  (doseq [x (range 1 3)]
+    (click driver
+           {:css
+            (str "._6d3hm:nth-child(1) ._mck9w:nth-child(1) a")})
     (wait 2)
-    (recur driver (+ index 1))))
+    (follow-user-index driver)
+    (back driver)
+    (refresh driver)))
+
+(defn comment-index
+  ([driver index]
+   (when (and (exists? driver {:css (str "._6e4x5:nth-child(" index ")" " a._2g7d5")})
+              (< index 50))
+     (scroll-query driver {:css (str "._6e4x5:nth-child(" index ")" " a._2g7d5")})
+     (scroll-by driver 0 -100)
+     (click driver {:css (str "._6e4x5:nth-child(" index ")" " a._2g7d5")})
+     (wait-exists driver {:css "._573jb"})
+     (when (exists? driver {:css "._6d3hm:nth-child(1) ._mck9w:nth-child(1) > a"})
+       (click driver {:css "._6d3hm:nth-child(1) ._mck9w:nth-child(1) > a"})
+       (wait-enabled driver {:css ".coreSpriteComment"})
+       (scroll-query driver {:css ".coreSpriteComment"})
+       (scroll-by driver 0 -100)
+       (when-not (exists? driver {:css "._reoub"})
+         (click driver {:css ".coreSpriteComment"})
+         (fill-human driver {:css "textarea._bilrf"} "hello!")
+         (click driver {:css "._55p7a"})
+         (wait-exists driver {:css "._reoub"}))
+       (back driver))
+     (back driver)
+     (wait 2)
+     (recur driver (+ 1 index)))))
+
+(def driver (instagram-driver))
+(defn auto-do []
+  (instagram-home driver)
+  (recovery-cookies driver "dasheng523@163.com")
+  (instagram-home driver)
+  (do-follow-user driver))
+
+(auto-do)
+#_(do-follow-user driver)
+
+#_(click driver {:css "._k0d2z:nth-child(5) a"})
+#_(wait-exists driver {:css "._573jb:nth-child(3)"})
+#_(click driver {:css "._573jb:nth-child(3)"})
+
+
+
+
 
 #_(js-execute driver "document.querySelector('form._7xah4 input._l8al6').disabled=true;")
 #_(click driver {:tag :div :class "_crp8c coreSpriteFeedCreation"})
 #_(upload-file driver {:css "form._7xah4 input._l8al6"} "f:/20180414122806.png")
 
-#_(def driver (instagram-driver))
 #_(instagram-home driver)
 #_(save-cookies driver "dasheng523@163.com")
 #_(recovery-cookies driver "dasheng523@163.com")
