@@ -159,7 +159,7 @@
   ([driver]
    (weibo-search-current-page driver 1)))
 
-(defn search-weibo [driver kword]
+(defn weibo-search [driver kword]
   (fill-human driver {:css "input.W_input"} kword)
   (fill driver {:css "input.W_input"} ek/enter)
   (wait 3)
@@ -225,11 +225,51 @@
   (fill-human driver {:tag :input :name "kw1"} kword)
   (fill driver {:tag :input :name "kw1"} ek/enter))
 
-(tieba-search driver "好未来")
+; 需要登陆的平台有知乎，百度，微博（能自动登陆）
+
+#_(tieba-search driver "好未来")
+
+
+(def platforms [:zhihu :tieba :baidu :weibo :souhu])
+(def platform-driver-map (reduce #(assoc %1 %2 (search-driver)) {} platforms))
+(def platform-login-urls
+  {:zhihu "https://www.zhihu.com/signup?next=%2F"
+   :tieba "http://tieba.baidu.com/f/user/passport"
+   :baidu "https://passport.baidu.com/v2/?login"
+   :weibo "https://weibo.com/"
+   :souhu "http://www.sohu.com/"})
+(def platform-search-handler
+  {:zhihu #'zhihu-search
+   :tieba #'tieba-search
+   :baidu #'baidu-search
+   :weibo #'weibo-search
+   :souhu #'souhu-search})
+
+(defn init-drivers []
+  (doseq [[plat driver] platform-driver-map]
+    (set-driver-timeout driver)
+    (try+
+     (go driver (get platform-login-urls plat))
+     (catch [:type :etaoin/http-error] _ _))))
+
+(defn quit-drivers []
+  (doseq [[_ driver] platform-driver-map]
+    (quit driver)))
+
+(defn do-logic []
+  (map (fn [n]
+         (let [driver (get platform-driver-map n)
+               handler (get platform-search-handler n)]
+           (future (handler driver "电商之家"))))
+       platforms))
+
+(init-drivers)
+
+(do-logic)
 
 (def driver (search-driver))
-
 (set-driver-timeout driver)
+(quit-drivers)
 
 
 
