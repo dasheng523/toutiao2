@@ -25,15 +25,14 @@
         (badwords)))
 
 
-(def content-chan (async/chan))
+(def result-container (atom #{}))
 
-(defn handle-content [content]
-  (when (has-badwords? content)
-    (println content)
-    (async/put! content-chan content)))
-
-(has-badwords? "骗")
-(badwords)
+(defn handle-content [url content]
+  (let [bads (badwords)
+        badw (filter #(str/includes? "骗人" %) bads)]
+    (when badw
+      (println url)
+      (swap! result-container conj {:url url :badword badw}))))
 
 (defn- search-driver []
   (chrome
@@ -45,11 +44,14 @@
    {:path-driver (.getPath (io/resource (tdriver/get-firefox-path)))
     :capabilities {}}))
 
-(defn set-driver-timeout [driver]
-  (with-resp driver :post
-    [:session (:session @driver) :timeouts]
-    {:type "page load" :ms 5000}
-    _))
+(defn set-driver-timeout
+  ([driver timeout]
+   (with-resp driver :post
+     [:session (:session @driver) :timeouts]
+     {:type "page load" :ms timeout}
+     _))
+  ([driver]
+   (set-driver-timeout driver 5000)))
 
 (defn is-has-texts [source ks]
   (if (empty? ks)
@@ -69,9 +71,9 @@
     "sohu.com" souhu-content
     other-content))
 
-
 (defn souhu-search [driver searchkey]
   (go driver (str "http://search.sohu.com/?keyword=" searchkey))
+  (wait 2)
   (loop [i 1]
     (let [detail-node [{:tag :div :class "ArticleFeed"}
                        {:tag :div :index i}
@@ -84,7 +86,7 @@
         (wait 1)
         (switch-window driver (last (get-window-handles driver)))
         (wait 5)
-        (handle-content (souhu-content driver))
+        (handle-content (get-url driver) (souhu-content driver))
         (close-window driver)
         (switch-window driver (first (get-window-handles driver)))
         (recur (+ i 1))))))
@@ -96,12 +98,18 @@
                {:tag :h3}
                {:tag :a}]]
      (when (exists? driver node)
-       #_(scroll-query driver node)
-       (click driver node)
-       (wait 1)
-       (switch-window driver (last (get-window-handles driver)))
-       (wait 5)
-       (handle-content ((dispatch-content-fn (get-url driver)) driver))
+       (scroll-query driver node)
+       (scroll-by driver 0 -50)
+       (try+
+        (click driver node)
+        (wait 1)
+        (switch-window driver (last (get-window-handles driver)))
+        (wait 3)
+        (wait-exists driver {:css "body"})
+        (handle-content (get-url driver)
+                        ((dispatch-content-fn (get-url driver)) driver))
+        (catch [:type :etaoin/timeout] _ _)
+        (catch Object _ _))
        (close-window driver)
        (switch-window driver (first (get-window-handles driver)))
        (recur driver (+ index 1)))))
@@ -117,7 +125,6 @@
     (when (exists? driver {:css "div#page > a:last-child"})
       (click driver {:css "div#page > a:last-child"})
       (wait 2))))
-
 
 (defn save-cookies [driver user domain]
   (let [fcookie (str (config/get-cookies-path) "/" user "-" domain ".cookies")]
@@ -154,7 +161,7 @@
        (when (exists? driver comment)
          (click driver comment)
          (wait 2))
-       (handle-content (get-element-text driver node))
+       (handle-content (get-url driver) (get-element-text driver node))
        (recur driver (+ index 1)))))
   ([driver]
    (weibo-search-current-page driver 1)))
@@ -163,7 +170,18 @@
   (fill-human driver {:css "input.W_input"} kword)
   (fill driver {:css "input.W_input"} ek/enter)
   (wait 3)
-  (weibo-search-current-page driver))
+  (dotimes [n 20]
+    (weibo-search-current-page driver)
+    (when (and (exists? driver {:tag :a :class "page next S_txt1 S_line1"})
+               (get-element-text driver
+                                 {:tag :a :class "page next S_txt1 S_line1"}))
+      (click driver {:tag :a :class "page next S_txt1 S_line1"})
+      (wait 3))))
+
+#_(def driver (search-driver))
+#_(set-driver-timeout driver (* 1000 10))
+#_(weibo-search driver "电商之家")
+#_(count (set @result-container))
 
 
 (defn zhihu-search-current-page
@@ -183,7 +201,7 @@
        (when (exists? driver readmore)
          (click driver readmore)
          (wait 1))
-       (handle-content (get-element-text driver node))
+       (handle-content (get-url driver) (get-element-text driver node))
        (recur driver (+ index 1)))))
   ([driver]
    (zhihu-search-current-page driver 1)))
@@ -197,7 +215,7 @@
 (defn tieba-content [driver]
   (if (exists? driver {:css ".p_postlist"})
     (some-> (get-element-text driver {:css ".p_postlist"})
-            (handle-content)))
+            (->> (handle-content (get-url driver)))))
   (when (and (exists? driver {:css ".l_posts_num a:nth-last-child(2)"})
              (= (get-element-text driver {:css ".l_posts_num a:nth-last-child(2)"}) "下一页"))
     (click driver {:css ".l_posts_num a:nth-last-child(2)"})
@@ -227,8 +245,6 @@
 
 ; 需要登陆的平台有知乎，百度，微博（能自动登陆）
 
-#_(tieba-search driver "好未来")
-
 
 (def platforms [:zhihu :tieba :baidu :weibo :souhu])
 (def platform-driver-map (reduce #(assoc %1 %2 (search-driver)) {} platforms))
@@ -244,7 +260,6 @@
    :baidu #'baidu-search
    :weibo #'weibo-search
    :souhu #'souhu-search})
-
 
 #_(click driver {:css ".l_posts_num a:last-child"})
 
@@ -275,8 +290,7 @@
 
 (do-logic)
 
-(def driver (search-driver))
-(set-driver-timeout driver)
+
 (quit-drivers)
 
 
