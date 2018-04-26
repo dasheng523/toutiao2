@@ -7,13 +7,16 @@
             [cheshire.core :as json]
             [clojure.java.io :as io]
             [clojure.string :as str]
-            [toutiao2.config :refer [isWindows?]]))
+            [toutiao2.config :refer [isWindows?]]
+            [clojure.tools.logging :as log]
+            [slingshot.slingshot :refer [throw+ try+]]))
 
 (defn- badwords []
   (let [path (if (isWindows?)
                (-> config/env :win-dired-path)
                (-> config/env :mac-dired-path))]
     (-> (slurp (str path "/badwords.txt"))
+        (str/replace #"\r" "")
         (str/split #"\n")
         (->> (remove nil?)))))
 
@@ -25,17 +28,28 @@
 (def content-chan (async/chan))
 
 (defn handle-content [content]
-  (if (has-badwords? content)
+  (when (has-badwords? content)
     (println content)
     (async/put! content-chan content)))
+
+(has-badwords? "骗")
+(badwords)
 
 (defn- search-driver []
   (chrome
    {:path-driver (.getPath (io/resource (tdriver/get-chromedriver-path)))
-    :capabilities {}})
+    :args []
+    :args-driver ["--ipc-connection-timeout=1"]
+    :size [1920 800]})
   #_(firefox
    {:path-driver (.getPath (io/resource (tdriver/get-firefox-path)))
     :capabilities {}}))
+
+(defn set-driver-timeout [driver]
+  (with-resp driver :post
+    [:session (:session @driver) :timeouts]
+    {:type "page load" :ms 5000}
+    _))
 
 (defn is-has-texts [source ks]
   (if (empty? ks)
@@ -145,7 +159,7 @@
   ([driver]
    (weibo-search-current-page driver 1)))
 
-(defn search-weibo [driver kword]
+(defn weibo-search [driver kword]
   (fill-human driver {:css "input.W_input"} kword)
   (fill driver {:css "input.W_input"} ek/enter)
   (wait 3)
@@ -180,20 +194,57 @@
   (wait 3)
   (zhihu-search-current-page driver))
 
+(defn tieba-content [driver]
+  (if (exists? driver {:css ".p_postlist"})
+    (some-> (get-element-text driver {:css ".p_postlist"})
+            (handle-content)))
+  (when (and (exists? driver {:css ".l_posts_num a:nth-last-child(2)"})
+             (= (get-element-text driver {:css ".l_posts_num a:nth-last-child(2)"}) "下一页"))
+    (click driver {:css ".l_posts_num a:nth-last-child(2)"})
+    (wait 2)
+    (recur driver)))
 
-(defn tieba-page [driver index]
-  (let [node [{:tag :ul :id "thread_list"}
-              {:tag :li :class " j_thread_list clearfix" :index index}
-              {:css ".threadlist_lz a"}]]
-    (when (and (exists? driver node))
-      #_(scroll-query driver node)
-      (click driver node)
-      (wait 2)
-      (let [txtnode {:css ".left_section"}]
-        (when (exists? driver txtnode)
-          (handle-content (get-element-text driver txtnode))))
-      (handle-content (get-element-text driver node))
-      (recur driver (+ index 1)))))
+(defn tieba-page
+  ([driver index]
+   (let [node [{:tag :ul :id "thread_list"}
+               {:tag :li :class " j_thread_list clearfix" :index index}
+               {:css ".threadlist_lz a"}]]
+     (when (and (exists? driver node))
+       (click driver node)
+       (switch-window driver (last (get-window-handles driver)))
+       (wait 2)
+       (tieba-content driver)
+       (close-window driver)
+       (recur driver (+ index 1)))))
+  ([driver]
+   (tieba-page driver 1)))
+
+
+(defn tieba-search [driver kword]
+  (go driver "https://tieba.baidu.com/index.html")
+  (fill-human driver {:tag :input :name "kw1"} kword)
+  (fill driver {:tag :input :name "kw1"} ek/enter))
+
+; 需要登陆的平台有知乎，百度，微博（能自动登陆）
+
+#_(tieba-search driver "好未来")
+
+
+(def platforms [:zhihu :tieba :baidu :weibo :souhu])
+(def platform-driver-map (reduce #(assoc %1 %2 (search-driver)) {} platforms))
+(def platform-login-urls
+  {:zhihu "https://www.zhihu.com/signup?next=%2F"
+   :tieba "http://tieba.baidu.com/f/user/passport"
+   :baidu "https://passport.baidu.com/v2/?login"
+   :weibo "https://weibo.com/"
+   :souhu "http://www.sohu.com/"})
+(def platform-search-handler
+  {:zhihu #'zhihu-search
+   :tieba #'tieba-search
+   :baidu #'baidu-search
+   :weibo #'weibo-search
+   :souhu #'souhu-search})
+
 
 #_(click driver {:css ".l_posts_num a:last-child"})
 
@@ -201,6 +252,39 @@
 #_(go driver "http://tieba.baidu.com/p/2860614426")
 #_(go driver "https://zhihu.com/")
 
+
+(defn init-drivers []
+  (doseq [[plat driver] platform-driver-map]
+    (set-driver-timeout driver)
+    (try+
+     (go driver (get platform-login-urls plat))
+     (catch [:type :etaoin/http-error] _ _))))
+
+(defn quit-drivers []
+  (doseq [[_ driver] platform-driver-map]
+    (quit driver)))
+
+(defn do-logic []
+  (map (fn [n]
+         (let [driver (get platform-driver-map n)
+               handler (get platform-search-handler n)]
+           (future (handler driver "电商之家"))))
+       platforms))
+
+(init-drivers)
+
+(do-logic)
+
+(def driver (search-driver))
+(set-driver-timeout driver)
+(quit-drivers)
+
+
+
+#_(fill-human driver {:tag :input :id "TANGRAM__PSP_4__userName"} "18938657523")
+#_(fill-human driver {:css "input#TANGRAM__PSP_4__userName"} "111")
+
+#_(go driver "https://zhihu.com/")
 
 #_(save-cookies driver "yesheng" "zhihu")
 #_(recover-cookies driver "yesheng" "zhihu")
@@ -218,8 +302,5 @@
   (let [detail-node {:css (str ".ImageNewsCardContent > a:nth-child(" i ")")}]
     (exists? driver detail-node)))
 #_(exists? driver {:css ".ImageNewsCardContent:nth-child(3) > a"})
-
-
-
 
 

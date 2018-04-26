@@ -11,8 +11,9 @@
 (defn- instagram-driver []
   (chrome
    {:path-driver (.getPath (io/resource (tdriver/get-chromedriver-path)))
-    :size [375 667]
-    :capabilities {:chromeOptions {:args ["--user-agent=Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Mobile Safari/537.36"]}}}))
+    ;:size [375 667]
+    :capabilities {:chromeOptions {:args ["--user-agent=Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Mobile Safari/537.36"
+                                          "--window-size=375,667"]}}}))
 
 
 (defn instagram-home [driver]
@@ -89,28 +90,53 @@
     (back driver)
     (refresh driver)))
 
+(defn random-greet []
+  (rand-nth ["hello, it is good!"
+             "Awwwwwww"
+             "I love your pics"
+             "Beauty"
+             "This is what I want to be seeing from now sweetheart."
+             "looks good"
+             "yes cee c do u really love"
+             "Oh Nice"
+             "Amazing look"]))
+
+
 (defn comment-index
   ([driver index]
    (when (and (exists? driver {:css (str "._6e4x5:nth-child(" index ")" " a._2g7d5")})
               (< index 50))
      (scroll-query driver {:css (str "._6e4x5:nth-child(" index ")" " a._2g7d5")})
-     (scroll-by driver 0 -100)
+     (scroll-by driver 0 -40)
      (click driver {:css (str "._6e4x5:nth-child(" index ")" " a._2g7d5")})
      (wait-exists driver {:css "._573jb"})
-     (when (exists? driver {:css "._6d3hm:nth-child(1) ._mck9w:nth-child(1) > a"})
-       (click driver {:css "._6d3hm:nth-child(1) ._mck9w:nth-child(1) > a"})
-       (wait-enabled driver {:css ".coreSpriteComment"})
-       (scroll-query driver {:css ".coreSpriteComment"})
-       (scroll-by driver 0 -100)
-       (when-not (exists? driver {:css "._reoub"})
-         (click driver {:css ".coreSpriteComment"})
-         (fill-human driver {:css "textarea._bilrf"} "hello!")
-         (click driver {:css "._55p7a"})
-         (wait-exists driver {:css "._reoub"}))
+     (wait 3)
+     (when (exists? driver {:css "._mck9w"})
+       (click driver {:css "._mck9w"})
+       (wait-enabled driver {:css "._qv64e"})
+       (when (exists? driver {:css ".coreSpriteComment"})
+         (scroll-query driver {:css ".coreSpriteComment"})
+         (scroll-by driver 0 -100)
+         (when-not (exists? driver {:css "._reoub"})
+           (click driver {:css ".coreSpriteComment"})
+           (fill-human driver {:css "textarea._bilrf"} (random-greet))
+           (click driver {:css "._55p7a"})
+           (wait-exists driver {:css "._reoub"})))
        (back driver))
      (back driver)
      (wait 2)
-     (recur driver (+ 1 index)))))
+     (recur driver (+ 1 index))))
+  ([driver]
+   (comment-index driver 1)))
+
+#_(comment-index driver 20)
+
+(defn comment-user [driver]
+  (click driver {:css "._k0d2z:nth-child(5) a"})
+  (wait-exists driver {:css "._573jb:nth-child(3)"})
+  (click driver {:css "._573jb:nth-child(3)"})
+  (comment-index driver))
+
 
 (def driver (instagram-driver))
 (defn auto-do []
@@ -120,11 +146,9 @@
   (do-follow-user driver))
 
 (auto-do)
+(comment-user driver)
 #_(do-follow-user driver)
 
-#_(click driver {:css "._k0d2z:nth-child(5) a"})
-#_(wait-exists driver {:css "._573jb:nth-child(3)"})
-#_(click driver {:css "._573jb:nth-child(3)"})
 
 
 
