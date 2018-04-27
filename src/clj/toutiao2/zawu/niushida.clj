@@ -258,7 +258,10 @@
 
 ;; 需要登陆的平台有知乎，百度，微博（能自动登陆）
 (def platforms [:zhihu :tieba :baidu :weibo :souhu])
-(def platform-driver-map (reduce #(assoc %1 %2 (search-driver)) {} platforms))
+
+(defn create-driver-map []
+  (reduce #(assoc %1 %2 (search-driver)) {} platforms))
+
 (def platform-login-urls
   {:zhihu "https://www.zhihu.com/signup?next=%2F"
    :tieba "http://tieba.baidu.com/f/user/passport"
@@ -272,45 +275,68 @@
    :weibo #'weibo-search
    :souhu #'souhu-search})
 
-#_(click driver {:css ".l_posts_num a:last-child"})
 
-#_(def driver (search-driver))
-#_(go driver "http://tieba.baidu.com/p/2860614426")
-#_(go driver "https://zhihu.com/")
-
-
-(defn init-drivers []
-  (doseq [[plat driver] platform-driver-map]
+(defn init-drivers [driver-map]
+  (doseq [[plat driver] driver-map]
     (set-driver-timeout driver)
     (try+
      (go driver (get platform-login-urls plat))
      (catch [:type :etaoin/http-error] _ _))))
 
-(defn quit-drivers []
-  (doseq [[_ driver] platform-driver-map]
+(defn quit-drivers [driver-map]
+  (doseq [[_ driver] driver-map]
     (quit driver)))
 
-(defn do-logic []
+(defn search-multi-driver [driver-map kword]
   (map (fn [n]
-         (let [driver (get platform-driver-map n)
+         (let [driver (get driver-map n)
                handler (get platform-search-handler n)]
-           (future (handler driver "电商之家"))))
+           (future (handler driver kword))))
        platforms))
 
-(init-drivers)
 
-(do-logic)
+#_(def driver-map (create-driver-map))
+#_(init-drivers driver-map)
+#_(do-logic driver-map)
+#_(println @result-container)
+#_(count @result-container)
 
 
-(quit-drivers)
+#_(quit-drivers)
 
 
 (def driver (search-driver))
 (set-driver-timeout driver (* 1000 10))
-(quit driver)
-(tieba-search driver "电商之家")
-(reset! result-container #{})
-(println (first @result-container))
+
+(go driver "https://tieba.baidu.com/index.html")
+(fill-human driver {:css ".search_ipt"} "电商之家")
+(click driver {:css ".j_search_post"})
+(defn tieba-allba-search
+  ([driver index]
+   (when (exists? driver [{:class "s_post" :index index}
+                          {:css ".p_title a"}])
+     (scroll-query driver [{:class "s_post" :index index}
+                           {:css ".p_title a"}])
+     (scroll-by driver 0 -35)
+     (click driver [{:class "s_post" :index index}
+                    {:css ".p_title a"}])
+     (wait 3)
+     (switch-window driver (last (get-window-handles driver)))
+     (tieba-content driver)
+     (wait 1)
+     (close-window driver)
+     (switch-window driver (first (get-window-handles driver)))
+     (wait 1)
+     (recur driver (+ 1 index))))
+  ([driver]
+   (tieba-allba-search driver 1)))
+
+(tieba-allba-search driver 5)
+
+#_(quit driver)
+#_(tieba-search driver "电商之家")
+#_(reset! result-container #{})
+#_(println (first @result-container))
 
 
 #_(fill-human driver {:tag :input :id "TANGRAM__PSP_4__userName"} "18938657523")

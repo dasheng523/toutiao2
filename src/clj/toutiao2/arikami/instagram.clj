@@ -4,7 +4,8 @@
             [etaoin.keys :as ek]
             [cheshire.core :as json]
             [clojure.java.io :as io]
-            [toutiao2.config :refer [isWindows?]]))
+            [toutiao2.config :refer [isWindows?]]
+            [clojure.tools.logging :as log]))
 
 
 "--proxy-server=socks5://127.0.0.1:55555"
@@ -61,7 +62,7 @@
 (defn follow-user-index
   ([driver index]
    (when (and (exists? driver {:css (str "._ezgzd:nth-child(" index ")")})
-              (< index 50))
+              (< index 15))
      (if (exists? driver {:css (str "._ezgzd:nth-child(" (- index 2) ")")})
        (scroll-query driver {:css (str "._ezgzd:nth-child(" (- index 2) ")")}))
      (click driver [{:css (str "._ezgzd:nth-child(" index ") a")}])
@@ -81,42 +82,54 @@
 (defn do-follow-user [driver]
   (click driver {:css "._k0d2z:nth-child(2) a"})
   (wait-exists driver {:css "._6d3hm"})
-  (doseq [x (range 1 3)]
+  (doseq [x (range 1 4)]
     (click driver
            {:css
             (str "._6d3hm:nth-child(1) ._mck9w:nth-child(1) a")})
     (wait 2)
     (follow-user-index driver)
     (back driver)
-    (refresh driver)))
+    (refresh driver)
+    (wait-enabled driver {:css
+                          (str "._6d3hm:nth-child(1) ._mck9w:nth-child(1) a")})))
 
 (defn random-greet []
   (rand-nth ["hello, it is good!"
              "Awwwwwww"
+             "Kindly follow back"
              "I love your pics"
              "Beauty"
              "This is what I want to be seeing from now sweetheart."
              "looks good"
              "yes cee c do u really love"
              "Oh Nice"
+             "Wow, is this an exercise or something?"
              "Amazing look"]))
 
 
 (defn comment-index
   ([driver index]
    (when (and (exists? driver {:css (str "._6e4x5:nth-child(" index ")" " a._2g7d5")})
-              (< index 50))
+              (< index 15))
      (scroll-query driver {:css (str "._6e4x5:nth-child(" index ")" " a._2g7d5")})
      (scroll-by driver 0 -40)
      (click driver {:css (str "._6e4x5:nth-child(" index ")" " a._2g7d5")})
-     (wait-exists driver {:css "._573jb"})
-     (wait 3)
-     (when (exists? driver {:css "._mck9w"})
+     (wait (+ (rand-int 10) 1))
+     (try
+       (wait-exists driver {:css "._mck9w"} {:timeout 10})
+       (catch Exception e
+         (log/error e)))
+     (when (and (exists? driver {:css "._mck9w"})
+                (not (exists? driver {:css "._7r25s"})))
        (click driver {:css "._mck9w"})
-       (wait-enabled driver {:css "._qv64e"})
+       (wait (+ (rand-int 10) 1))
+       (try
+         (wait-enabled driver {:css ".coreSpriteComment"})
+         (catch Exception e
+           (log/error e)))
        (when (exists? driver {:css ".coreSpriteComment"})
          (scroll-query driver {:css ".coreSpriteComment"})
-         (scroll-by driver 0 -100)
+         (scroll-by driver 0 -40)
          (when-not (exists? driver {:css "._reoub"})
            (click driver {:css ".coreSpriteComment"})
            (fill-human driver {:css "textarea._bilrf"} (random-greet))
@@ -129,14 +142,13 @@
   ([driver]
    (comment-index driver 1)))
 
-#_(comment-index driver 20)
-
 (defn comment-user [driver]
   (click driver {:css "._k0d2z:nth-child(5) a"})
   (wait-exists driver {:css "._573jb:nth-child(3)"})
   (click driver {:css "._573jb:nth-child(3)"})
   (comment-index driver))
 
+(comment-index driver 20)
 
 (def driver (instagram-driver))
 (defn auto-do []
@@ -145,7 +157,7 @@
   (instagram-home driver)
   (do-follow-user driver))
 
-(auto-do)
+#_(auto-do)
 (comment-user driver)
 #_(do-follow-user driver)
 
