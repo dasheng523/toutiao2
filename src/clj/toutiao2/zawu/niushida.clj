@@ -29,8 +29,8 @@
 
 (defn handle-content [url content]
   (let [bads (badwords)
-        badw (filter #(str/includes? "骗人" %) bads)]
-    (when badw
+        badw (filter #(str/includes? content %) bads)]
+    (when-not (empty? badw)
       (println url)
       (swap! result-container conj {:url url :badword badw}))))
 
@@ -178,20 +178,17 @@
       (click driver {:tag :a :class "page next S_txt1 S_line1"})
       (wait 3))))
 
-#_(def driver (search-driver))
-#_(set-driver-timeout driver (* 1000 10))
-#_(weibo-search driver "电商之家")
-#_(count (set @result-container))
-
 
 (defn zhihu-search-current-page
   ([driver index]
    (let [node [{:tag :div :class "List-item" :index index}]
          readmore (into node [{:css ".RichContent .ContentItem-more"}])
          comment (into node [{:css ".ContentItem"}
-                             {:css ".RichContent .ContentItem-action"}])]
+                             {:css ".RichContent .ContentItem-action"}])
+         urlnode (into node [{:css ".ContentItem-title a"}])
+         bads (badwords)]
      (when (and (exists? driver node)
-                (< index 10))
+                (< index 50))
        (scroll-query driver node)
        (when (and (exists? driver comment)
                   (str/includes? (get-element-text driver comment)
@@ -201,16 +198,20 @@
        (when (exists? driver readmore)
          (click driver readmore)
          (wait 1))
-       (handle-content (get-url driver) (get-element-text driver node))
+       (let [badw (filter #(str/includes? (get-element-text driver node) %) bads)]
+         (when badw
+           (handle-content (get-element-attr driver urlnode :href)
+                           (get-element-text driver node))))
        (recur driver (+ index 1)))))
   ([driver]
    (zhihu-search-current-page driver 1)))
 
 (defn zhihu-search [driver kword]
-  (fill-human driver {:css ".SearchBar-input .Input"} "奔驰")
+  (fill-human driver {:css ".SearchBar-input .Input"} kword)
   (fill driver {:css ".SearchBar-input .Input"} ek/enter)
   (wait 3)
   (zhihu-search-current-page driver))
+
 
 (defn tieba-content [driver]
   (if (exists? driver {:css ".p_postlist"})
@@ -228,24 +229,34 @@
                {:tag :li :class " j_thread_list clearfix" :index index}
                {:css ".threadlist_lz a"}]]
      (when (and (exists? driver node))
+       (wait 1)
        (click driver node)
        (switch-window driver (last (get-window-handles driver)))
        (wait 2)
        (tieba-content driver)
        (close-window driver)
+       (switch-window driver (first (get-window-handles driver)))
        (recur driver (+ index 1)))))
   ([driver]
    (tieba-page driver 1)))
 
 
+
 (defn tieba-search [driver kword]
   (go driver "https://tieba.baidu.com/index.html")
   (fill-human driver {:tag :input :name "kw1"} kword)
-  (fill driver {:tag :input :name "kw1"} ek/enter))
+  (fill driver {:tag :input :name "kw1"} ek/enter)
+  (loop [n 1]
+    (tieba-page driver)
+    (when (and
+           (exists? driver {:css "a.next"})
+           (str/includes? (get-element-text driver {:css "a.next"}) "下一页"))
+      (click driver {:css "a.next"})
+      (wait 3)
+      (recur (+ n 1)))))
 
-; 需要登陆的平台有知乎，百度，微博（能自动登陆）
 
-
+;; 需要登陆的平台有知乎，百度，微博（能自动登陆）
 (def platforms [:zhihu :tieba :baidu :weibo :souhu])
 (def platform-driver-map (reduce #(assoc %1 %2 (search-driver)) {} platforms))
 (def platform-login-urls
@@ -293,6 +304,13 @@
 
 (quit-drivers)
 
+
+(def driver (search-driver))
+(set-driver-timeout driver (* 1000 10))
+(quit driver)
+(tieba-search driver "电商之家")
+(reset! result-container #{})
+(println (first @result-container))
 
 
 #_(fill-human driver {:tag :input :id "TANGRAM__PSP_4__userName"} "18938657523")
