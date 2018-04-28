@@ -5,15 +5,18 @@
             [cheshire.core :as json]
             [clojure.java.io :as io]
             [toutiao2.config :refer [isWindows?]]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [image-resizer.core :as imgresize]
+            [image-resizer.format :as format])
+  (:import [javax.imageio ImageIO]))
 
 
-"--proxy-server=socks5://127.0.0.1:55555"
 (defn- instagram-driver []
   (chrome
    {:path-driver (.getPath (io/resource (tdriver/get-chromedriver-path)))
     ;:size [375 667]
     :capabilities {:chromeOptions {:args ["--user-agent=Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Mobile Safari/537.36"
+                                          "--proxy-server=socks5://127.0.0.1:55555"
                                           "--window-size=375,667"]}}}))
 
 
@@ -31,7 +34,7 @@
 
 (defn- get-cookies-path []
   (if (isWindows?)
-    "g:/coo/"
+    "e:/coo/"
     "/Users/huangyesheng/Documents/cookies"))
 
 (defn save-cookies [driver user]
@@ -146,22 +149,38 @@
   (click driver {:css "._k0d2z:nth-child(5) a"})
   (wait-exists driver {:css "._573jb:nth-child(3)"})
   (click driver {:css "._573jb:nth-child(3)"})
+  (wait 3)
   (comment-index driver))
 
-(comment-index driver 20)
-
-(def driver (instagram-driver))
 (defn auto-do []
   (instagram-home driver)
   (recovery-cookies driver "dasheng523@163.com")
-  (instagram-home driver)
-  (do-follow-user driver))
+  (instagram-home driver))
 
-#_(auto-do)
+(def driver (instagram-driver))
+(save-cookies driver "dasheng523@163.com")
+
+
+(auto-do)
+(do-follow-user driver)
 (comment-user driver)
+
+
+(defn get-image-dime [file]
+  (imgresize/dimensions (ImageIO/read file)))
+
+(let [path "f:/cccc.jpg"
+      img (io/as-file path)]
+  (format/as-file
+   (imgresize/crop-to-height img (- (last (get-image-dime img)) 40))
+   "f:/mad-hatter.jpg"))
+
+(get-image-dime (io/as-file "f:/aaaa.jpg"))
+(get-image-dime (io/as-file "f:/bbbb.jpg"))
+(get-image-dime (io/as-file "f:/cccc.jpg"))
+
 #_(do-follow-user driver)
-
-
+#_(comment-index driver 20)
 
 
 

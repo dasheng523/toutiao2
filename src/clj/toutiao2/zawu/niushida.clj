@@ -240,8 +240,6 @@
   ([driver]
    (tieba-page driver 1)))
 
-
-
 (defn tieba-search [driver kword]
   (go driver "https://tieba.baidu.com/index.html")
   (fill-human driver {:tag :input :name "kw1"} kword)
@@ -254,6 +252,43 @@
       (click driver {:css "a.next"})
       (wait 3)
       (recur (+ n 1)))))
+
+(defn tieba-allba-search-page
+  ([driver index]
+   (when (exists? driver [{:class "s_post" :index index}
+                          {:css ".p_title a"}])
+     (scroll-query driver [{:class "s_post" :index index}
+                           {:css ".p_title a"}])
+     (scroll-by driver 0 -50)
+     (click driver [{:class "s_post" :index index}
+                    {:css ".p_title a"}])
+     (wait 3)
+     (switch-window driver (last (get-window-handles driver)))
+     (tieba-content driver)
+     (wait 1)
+     (close-window driver)
+     (switch-window driver (first (get-window-handles driver)))
+     (wait 1)
+     (recur driver (+ 1 index))))
+  ([driver]
+   (tieba-allba-search-page driver 1)))
+
+(defn tieba-allba-search [driver kword]
+  (go driver "https://tieba.baidu.com/index.html")
+  (fill-human driver {:css ".search_ipt"} "PHP")
+  (click driver {:css ".j_search_post"})
+  (loop [n 1]
+    (when (< n 10)
+      (wait 3)
+      (tieba-allba-search-page driver)
+      (wait 1)
+      (when (and
+             (exists? driver {:css "a.next"})
+             (str/includes? (get-element-text driver {:css "a.next"}) "下一页"))
+        (click driver {:css "a.next"})
+        (wait 3)
+        (recur (+ n 1))))))
+
 
 
 ;; 需要登陆的平台有知乎，百度，微博（能自动登陆）
@@ -300,65 +335,12 @@
 #_(do-logic driver-map)
 #_(println @result-container)
 #_(count @result-container)
-
-
 #_(quit-drivers)
 
 
-(def driver (search-driver))
-(set-driver-timeout driver (* 1000 10))
-
-(go driver "https://tieba.baidu.com/index.html")
-(fill-human driver {:css ".search_ipt"} "电商之家")
-(click driver {:css ".j_search_post"})
-(defn tieba-allba-search
-  ([driver index]
-   (when (exists? driver [{:class "s_post" :index index}
-                          {:css ".p_title a"}])
-     (scroll-query driver [{:class "s_post" :index index}
-                           {:css ".p_title a"}])
-     (scroll-by driver 0 -35)
-     (click driver [{:class "s_post" :index index}
-                    {:css ".p_title a"}])
-     (wait 3)
-     (switch-window driver (last (get-window-handles driver)))
-     (tieba-content driver)
-     (wait 1)
-     (close-window driver)
-     (switch-window driver (first (get-window-handles driver)))
-     (wait 1)
-     (recur driver (+ 1 index))))
-  ([driver]
-   (tieba-allba-search driver 1)))
-
-(tieba-allba-search driver 5)
+#_(def driver (search-driver))
+#_(set-driver-timeout driver (* 1000 10))
+#_(quit driver)
+#_(switch-window driver (first (get-window-handles driver)))
 
 #_(quit driver)
-#_(tieba-search driver "电商之家")
-#_(reset! result-container #{})
-#_(println (first @result-container))
-
-
-#_(fill-human driver {:tag :input :id "TANGRAM__PSP_4__userName"} "18938657523")
-#_(fill-human driver {:css "input#TANGRAM__PSP_4__userName"} "111")
-
-#_(go driver "https://zhihu.com/")
-
-#_(save-cookies driver "yesheng" "zhihu")
-#_(recover-cookies driver "yesheng" "zhihu")
-
-#_(search-weibo driver "美女")
-
-#_(souhu-search driver "纽仕达")
-#_(baidu-search driver "奔驰")
-
-#_(baidu-current-page 1)
-
-#_(go driver (str "http://search.sohu.com/?keyword=" "纽仕达"))
-
-#_(for [i (range 20)]
-  (let [detail-node {:css (str ".ImageNewsCardContent > a:nth-child(" i ")")}]
-    (exists? driver detail-node)))
-#_(exists? driver {:css ".ImageNewsCardContent:nth-child(3) > a"})
-
-
