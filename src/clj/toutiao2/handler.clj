@@ -2,6 +2,7 @@
   (:require [compojure.core :refer [routes wrap-routes]]
             [toutiao2.layout :refer [error-page]]
             [toutiao2.routes.home :refer [home-routes]]
+            [toutiao2.zawu.routes :refer [zawu-routes zawu-service]]
             [toutiao2.routes.arikami :refer [arikami-routes]]
             [toutiao2.routes.services :refer [service-routes]]
             [toutiao2.routes.oauth :refer [oauth-routes]]
@@ -43,8 +44,12 @@
     (-> #'arikami-routes
         (wrap-routes middleware/wrap-csrf)
         (wrap-routes middleware/wrap-formats))
+    (-> #'zawu-routes
+        (wrap-routes middleware/wrap-csrf)
+        (wrap-routes middleware/wrap-formats))
     #'oauth-routes
     #'service-routes
+    #'zawu-service
     (route/not-found
       (:body
         (error-page {:status 404

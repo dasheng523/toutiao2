@@ -101,6 +101,7 @@
              "Awwwwwww"
              "Kindly follow back"
              "I love your pics"
+             "Can you follow me?"
              "Beauty"
              "This is what I want to be seeing from now sweetheart."
              "looks good"
@@ -152,16 +153,16 @@
   (wait 3)
   (comment-index driver))
 
-(defn auto-do []
+(defn recovery-login [driver]
   (instagram-home driver)
   (recovery-cookies driver "dasheng523@163.com")
   (instagram-home driver))
 
 (def driver (instagram-driver))
 (save-cookies driver "dasheng523@163.com")
+(quit driver)
 
-
-(auto-do)
+(recovery-login driver)
 (do-follow-user driver)
 (comment-user driver)
 
@@ -169,15 +170,6 @@
 (defn get-image-dime [file]
   (imgresize/dimensions (ImageIO/read file)))
 
-(let [path "f:/cccc.jpg"
-      img (io/as-file path)]
-  (format/as-file
-   (imgresize/crop-to-height img (- (last (get-image-dime img)) 40))
-   "f:/mad-hatter.jpg"))
-
-(get-image-dime (io/as-file "f:/aaaa.jpg"))
-(get-image-dime (io/as-file "f:/bbbb.jpg"))
-(get-image-dime (io/as-file "f:/cccc.jpg"))
 
 #_(do-follow-user driver)
 #_(comment-index driver 20)

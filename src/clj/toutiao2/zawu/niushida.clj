@@ -11,28 +11,47 @@
             [clojure.tools.logging :as log]
             [slingshot.slingshot :refer [throw+ try+]]))
 
-(defn- badwords []
+(def niushida-config (atom nil))
+
+(defn load-config []
   (let [path (if (isWindows?)
                (-> config/env :win-dired-path)
                (-> config/env :mac-dired-path))]
-    (-> (slurp (str path "/badwords.txt"))
-        (str/replace #"\r" "")
-        (str/split #"\n")
-        (->> (remove nil?)))))
+    (-> (slurp (str path "/niushida-config.json"))
+        (json/parse-string true)
+        (->> (reset! niushida-config)))))
+
+(defn- badwords []
+  (:badword @niushida-config))
 
 (defn- has-badwords? [s]
   (some #(str/includes? s %)
         (badwords)))
 
+(defn- main-words []
+  (:mainwords @niushida-config))
+
+(defn- extra-words []
+  (:extrawords @niushida-config))
+
+(defn- search-words []
+  (for [main (main-words)
+        extra (extra-words)]
+    (str main " " extra)))
+
 
 (def result-container (atom #{}))
 
-(defn handle-content [url content]
+(defn handle-content [url title platform content]
   (let [bads (badwords)
         badw (filter #(str/includes? content %) bads)]
     (when-not (empty? badw)
       (println url)
-      (swap! result-container conj {:url url :badword badw}))))
+      (swap! result-container conj
+             {:url url
+              :badword badw
+              :title title
+              :platform platform}))))
 
 (defn- search-driver []
   (chrome
@@ -86,7 +105,7 @@
         (wait 1)
         (switch-window driver (last (get-window-handles driver)))
         (wait 5)
-        (handle-content (get-url driver) (souhu-content driver))
+        (handle-content (get-url driver) (get-title driver) :souhu (souhu-content driver))
         (close-window driver)
         (switch-window driver (first (get-window-handles driver)))
         (recur (+ i 1))))))
@@ -107,6 +126,8 @@
         (wait 3)
         (wait-exists driver {:css "body"})
         (handle-content (get-url driver)
+                        (get-title driver)
+                        :baidu
                         ((dispatch-content-fn (get-url driver)) driver))
         (catch [:type :etaoin/timeout] _ _)
         (catch Object _ _))
@@ -161,7 +182,10 @@
        (when (exists? driver comment)
          (click driver comment)
          (wait 2))
-       (handle-content (get-url driver) (get-element-text driver node))
+       (handle-content (get-url driver)
+                       "微博"
+                       :weibo
+                       (get-element-text driver node))
        (recur driver (+ index 1)))))
   ([driver]
    (weibo-search-current-page driver 1)))
@@ -201,6 +225,8 @@
        (let [badw (filter #(str/includes? (get-element-text driver node) %) bads)]
          (when badw
            (handle-content (get-element-attr driver urlnode :href)
+                           "知乎"
+                           :zhihu
                            (get-element-text driver node))))
        (recur driver (+ index 1)))))
   ([driver]
@@ -216,7 +242,9 @@
 (defn tieba-content [driver]
   (if (exists? driver {:css ".p_postlist"})
     (some-> (get-element-text driver {:css ".p_postlist"})
-            (->> (handle-content (get-url driver)))))
+            (->> (handle-content (get-url driver)
+                                 (get-title driver)
+                                 :tieba))))
   (when (and (exists? driver {:css ".l_posts_num a:nth-last-child(2)"})
              (= (get-element-text driver {:css ".l_posts_num a:nth-last-child(2)"}) "下一页"))
     (click driver {:css ".l_posts_num a:nth-last-child(2)"})
@@ -322,12 +350,37 @@
   (doseq [[_ driver] driver-map]
     (quit driver)))
 
-(defn search-multi-driver [driver-map kword]
-  (map (fn [n]
-         (let [driver (get driver-map n)
-               handler (get platform-search-handler n)]
-           (future (handler driver kword))))
-       platforms))
+(defn search-multi-driver [driver-map kwords]
+  (reduce (fn [col n]
+            (let [driver (get driver-map n)
+                  handler (get platform-search-handler n)]
+              (assoc col n (future (doseq [kword kwords]
+                                     (handler driver kword))))))
+          {} platforms))
+
+(def driver-map (atom nil))
+(def task-futures (atom {}))
+
+(defn init-app []
+  (reset! driver-map (create-driver-map))
+  (init-drivers @driver-map))
+
+(defn start-app []
+  (swap! task-futures
+         (search-multi-driver @driver-map (search-words))))
+
+(defn stop-app []
+  (when @driver-map
+    (quit-drivers @driver-map)
+    (reset! driver-map nil))
+  (when @task-futures
+    (doseq [f @task-futures]
+      (future-cancel f)))
+  (reset! result-container #{}))
+
+(defn app-status []
+  (reduce #(assoc % (future-done? (get @task-futures %)))
+          platforms))
 
 
 #_(def driver-map (create-driver-map))
