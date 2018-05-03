@@ -100,6 +100,7 @@
              "Awwwwwww"
              "Kindly follow back"
              "I love your pics"
+             "Can you follow me?"
              "Beauty"
              "This is what I want to be seeing from now sweetheart."
              "looks good"
@@ -135,6 +136,7 @@
          (when-not (exists? driver {:css "._reoub"})
            (click driver {:css ".coreSpriteComment"})
            (fill-human driver {:css "textarea._bilrf"} (random-greet))
+           (scroll-query driver {:css "._55p7a"})
            (click driver {:css "._55p7a"})
            (wait-exists driver {:css "._reoub"})))
        (back driver))
@@ -144,6 +146,7 @@
   ([driver]
    (comment-index driver 1)))
 
+
 (defn comment-user [driver]
   (click driver {:css "._k0d2z:nth-child(5) a"})
   (wait-exists driver {:css "._573jb:nth-child(3)"})
@@ -151,16 +154,15 @@
   (wait 3)
   (comment-index driver))
 
-(defn auto-do [driver]
+(defn recovery-login [driver]
   (instagram-home driver)
   (recovery-cookies driver "dasheng523@163.com")
   (instagram-home driver))
 
 (def driver (instagram-driver))
-#_(save-cookies driver "dasheng523@163.com")
+(quit driver)
 
-
-(auto-do driver)
+(recovery-login driver)
 (do-follow-user driver)
 #_(comment-user driver)
 
