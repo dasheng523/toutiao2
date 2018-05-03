@@ -10,13 +10,12 @@
             [image-resizer.format :as format])
   (:import [javax.imageio ImageIO]))
 
-
+"--proxy-server=socks5://127.0.0.1:55555"
 (defn- instagram-driver []
   (chrome
    {:path-driver (.getPath (io/resource (tdriver/get-chromedriver-path)))
     ;:size [375 667]
     :capabilities {:chromeOptions {:args ["--user-agent=Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Mobile Safari/537.36"
-                                          "--proxy-server=socks5://127.0.0.1:55555"
                                           "--window-size=375,667"]}}}))
 
 
@@ -152,32 +151,23 @@
   (wait 3)
   (comment-index driver))
 
-(defn auto-do []
+(defn auto-do [driver]
   (instagram-home driver)
   (recovery-cookies driver "dasheng523@163.com")
   (instagram-home driver))
 
 (def driver (instagram-driver))
-(save-cookies driver "dasheng523@163.com")
+#_(save-cookies driver "dasheng523@163.com")
 
 
-(auto-do)
+(auto-do driver)
 (do-follow-user driver)
-(comment-user driver)
+#_(comment-user driver)
 
 
 (defn get-image-dime [file]
   (imgresize/dimensions (ImageIO/read file)))
 
-(let [path "f:/cccc.jpg"
-      img (io/as-file path)]
-  (format/as-file
-   (imgresize/crop-to-height img (- (last (get-image-dime img)) 40))
-   "f:/mad-hatter.jpg"))
-
-(get-image-dime (io/as-file "f:/aaaa.jpg"))
-(get-image-dime (io/as-file "f:/bbbb.jpg"))
-(get-image-dime (io/as-file "f:/cccc.jpg"))
 
 #_(do-follow-user driver)
 #_(comment-index driver 20)

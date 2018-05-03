@@ -3,8 +3,8 @@
             [cheshire.core :as json]
             [toutiao2.utils :as utils]))
 
-(def api-customer-url "http://61.144.170.188:1497/OPEN/api/Customer/ERPCUSTOMER")
-(def api-products-url "http://61.144.170.188:1497/OPEN/api/Item/Query")
+  (def api-customer-url "http://61.144.170.188:1496/OPEN/api/Customer/ERPCUSTOMER")
+  (def api-products-url "http://61.144.170.188:1496/OPEN/api/Item/Query")
 
 
 (defn post-data [url req]
@@ -16,7 +16,7 @@
 
 (defn all-customers
   ([page]
-   (let [req {"PageSize" 5
+   (let [req {"PageSize" 500
               "PageNumber" page
               "RequestEntity" {"REP_0" ""}
               "Token" "ave40@SAGE"}
@@ -50,11 +50,11 @@
 
 
 
-#_(utils/save-to-excel
+(utils/save-to-excel
    (take 58888 (all-customers))
-   "g:/listdata/customers.xlsx")
+   "/Users/huangyesheng/Desktop/customers.xlsx")
 
 
 #_(utils/save-to-excel
  (take 20000 (all-products))
- "g:/listdata/products.xlsx")
+ "/Users/huangyesheng/Desktop/products.xlsx")
