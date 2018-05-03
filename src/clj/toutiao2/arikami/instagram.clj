@@ -137,6 +137,7 @@
          (when-not (exists? driver {:css "._reoub"})
            (click driver {:css ".coreSpriteComment"})
            (fill-human driver {:css "textarea._bilrf"} (random-greet))
+           (scroll-query driver {:css "._55p7a"})
            (click driver {:css "._55p7a"})
            (wait-exists driver {:css "._reoub"})))
        (back driver))
@@ -145,6 +146,7 @@
      (recur driver (+ 1 index))))
   ([driver]
    (comment-index driver 1)))
+
 
 (defn comment-user [driver]
   (click driver {:css "._k0d2z:nth-child(5) a"})
@@ -159,7 +161,6 @@
   (instagram-home driver))
 
 (def driver (instagram-driver))
-(save-cookies driver "dasheng523@163.com")
 (quit driver)
 
 (recovery-login driver)

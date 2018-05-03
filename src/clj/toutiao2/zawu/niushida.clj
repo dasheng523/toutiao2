@@ -233,6 +233,7 @@
    (zhihu-search-current-page driver 1)))
 
 (defn zhihu-search [driver kword]
+  (refresh driver)
   (fill-human driver {:css ".SearchBar-input .Input"} kword)
   (fill driver {:css ".SearchBar-input .Input"} ek/enter)
   (wait 3)
@@ -318,7 +319,6 @@
         (recur (+ n 1))))))
 
 
-
 ;; 需要登陆的平台有知乎，百度，微博（能自动登陆）
 (def platforms [:zhihu :tieba :baidu :weibo :souhu])
 
@@ -358,6 +358,7 @@
                                      (handler driver kword))))))
           {} platforms))
 
+
 (def driver-map (atom nil))
 (def task-futures (atom {}))
 
@@ -366,7 +367,7 @@
   (init-drivers @driver-map))
 
 (defn start-app []
-  (swap! task-futures
+  (reset! task-futures
          (search-multi-driver @driver-map (search-words))))
 
 (defn stop-app []
@@ -379,8 +380,14 @@
   (reset! result-container #{}))
 
 (defn app-status []
-  (reduce #(assoc % (future-done? (get @task-futures %)))
+  (reduce #(assoc %1 %2 (future-done? (get @task-futures %2)))
+          {}
           platforms))
+
+(init-app)
+(start-app)
+(app-status)
+@task-futures
 
 
 #_(def driver-map (create-driver-map))
@@ -388,7 +395,7 @@
 #_(do-logic driver-map)
 #_(println @result-container)
 #_(count @result-container)
-#_(quit-drivers)
+#_(quit-drivers @driver-map)
 
 
 #_(def driver (search-driver))
