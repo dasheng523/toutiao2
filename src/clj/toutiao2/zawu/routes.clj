@@ -24,7 +24,7 @@
 
 (api/defapi zawu-service
   {:swagger {:ui "/badword"
-             :spec "/swagger.json"
+             :spec "/badword.json"
              :data {:info {:version "1.0.0"
                            :title "负面信息系统"
                            :description "负面信息系统控制页面"}}}}
@@ -56,6 +56,6 @@
              (ok (niushida/app-status)))
     (api/POST "/result-page" []
               :return [result-msg]
-              :query-params [page :- int, size :- int]
+              :query-params [page :- Integer, size :- Integer]
               :summary "获取结果页面"
               (ok (niushida/result-page page size)))))
