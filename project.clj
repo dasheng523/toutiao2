@@ -30,7 +30,7 @@
                  [org.clojure/tools.logging "0.4.0"]
                  [org.clojure/tools.reader "1.1.0"]
                  [org.webjars.bower/tether "1.4.0"]
-                 [org.webjars/bootstrap "4.0.0-beta.2"]
+                 [org.webjars/bootstrap "4.1.0"]
                  [org.webjars/font-awesome "4.7.0"]
                  [re-frame "0.10.2"]
                  [re-com "2.1.0"]

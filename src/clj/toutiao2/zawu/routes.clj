@@ -9,7 +9,8 @@
 
 (compojure/defroutes zawu-routes
   (GET "/zawu" []
-       (layout/render "zawu/index.html")))
+       (-> (layout/render "zawu/index.html")
+           (charset "gbk"))))
 
 (s/defschema app-status
   {:platform String
@@ -36,12 +37,12 @@
          :query-params []
          :summary      "打开浏览器并登陆"
          (do (niushida/init-app)
-             (ok "成功")))
+             (ok "ok")))
     (api/POST "/start" []
          :return       String
-         :query-params []
+         :form-params [kwords :- [String]]
          :summary      "开始抓取"
-         (do (niushida/start-app)
+         (do (niushida/start-app (first kwords))
              (ok "正在开始")))
     (api/POST "/stop" []
              :return       String
@@ -56,6 +57,6 @@
              (ok (niushida/app-status)))
     (api/POST "/result-page" []
               :return [result-msg]
-              :query-params [page :- Integer, size :- Integer]
+              :query-params [page :- Integer]
               :summary "获取结果页面"
-              (ok (niushida/result-page page size)))))
+              (ok (niushida/result-page page 10)))))

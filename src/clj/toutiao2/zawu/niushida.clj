@@ -367,9 +367,9 @@
   (reset! driver-map (create-driver-map))
   (init-drivers @driver-map))
 
-(defn start-app []
+(defn start-app [kwords]
   (reset! task-futures
-         (search-multi-driver @driver-map (search-words))))
+         (search-multi-driver @driver-map kwords)))
 
 (defn stop-app []
   (when @driver-map
