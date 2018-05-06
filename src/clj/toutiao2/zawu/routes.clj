@@ -1,16 +1,19 @@
 (ns toutiao2.zawu.routes
   (:require [toutiao2.layout :as layout]
-            [toutiao2.config :refer [env]]
+            [toutiao2.config :refer [env isWindows?]]
             [compojure.core :as compojure :refer [GET POST]]
             [ring.util.http-response :refer :all]
             [compojure.api.sweet :as api]
             [schema.core :as s]
-            [toutiao2.zawu.niushida :as niushida]))
+            [toutiao2.zawu.niushida :as niushida]
+            [cheshire.core :as json]))
+
+(def mycharset (if (isWindows?) "gbk" "utf-8"))
 
 (compojure/defroutes zawu-routes
   (GET "/zawu" []
        (-> (layout/render "zawu/index.html")
-           (charset "gbk"))))
+           (charset mycharset))))
 
 (s/defschema app-status
   {:platform String
@@ -18,7 +21,11 @@
 
 (s/defschema result-msg
   {:url String
+   :id String
    :badword [String]
+   :ctime s/Num
+   :pagetime String
+   :isbad Boolean
    :title String
    :platform s/Keyword})
 
@@ -40,9 +47,9 @@
              (ok "ok")))
     (api/POST "/start" []
          :return       String
-         :form-params [kwords :- [String]]
+         :form-params [kwords :- String]
          :summary      "开始抓取"
-         (do (niushida/start-app (first kwords))
+         (do (niushida/start-app (json/parse-string kwords true))
              (ok "正在开始")))
     (api/POST "/stop" []
              :return       String
@@ -50,6 +57,12 @@
              :summary      "终止抓取"
              (do (niushida/stop-app)
                  (ok "正在终止")))
+    (api/POST "/markbad" []
+              :return       String
+              :form-params [id :- String, del :- Boolean]
+              :summary      "标记负面信息"
+              (do (niushida/mark-bad id del)
+                  (ok "ok")))
     (api/POST "/status" []
              :return       [app-status]
              :query-params []
@@ -57,6 +70,6 @@
              (ok (niushida/app-status)))
     (api/POST "/result-page" []
               :return [result-msg]
-              :query-params [page :- Integer]
+              :form-params [page :- s/Num]
               :summary "获取结果页面"
               (ok (niushida/result-page page 10)))))
