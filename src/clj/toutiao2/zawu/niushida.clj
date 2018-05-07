@@ -441,3 +441,24 @@
                      (assoc % :isbad true)
                      (assoc % :isbad false)))))))
 
+(def excel-fileds [:title :url :badword :platform :pagetime])
+
+(reset! result-container [{:title "aaaa" :url "123" :badword "4422" :platform :zhihu :pagetime "12345" :id 1}
+                          {:title "aaaa" :url "123" :badword "4422" :platform :zhihu :pagetime "12345" :id 2}
+                          {:title "aaaa" :url "123" :badword "4422" :platform :zhihu :pagetime "12345" :id 3}])
+
+(reset! badinfos [1])
+
+(defn markbad-list []
+  (let [list (filter #(some #{(get % :id)} @badinfos)
+                     @result-container)]
+    (cons (map name excel-fileds)
+          (map (fn [item]
+                 (map #(name (get item %)) excel-fileds))
+               list))))
+
+(defn create-markbad-file []
+  (let [f (str (config/get-download-path) "/" (utils/rand-idstr) ".xlsx")]
+    (utils/save-raw-data-excel (markbad-list) f)
+    f))
+

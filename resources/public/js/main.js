@@ -114,4 +114,11 @@ $(function() {
     getResult();
   });
 
+    $('#downloadbtn').click(function() {
+        var $eleForm = $("<form method='get'></form>");
+        $eleForm.attr("action","/zawu/download");
+        $(document.body).append($eleForm);
+        $eleForm.submit();
+    });
+
 });

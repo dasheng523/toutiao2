@@ -59,6 +59,11 @@
    (let [wb (sheet/create-workbook "html" (parse-excel-data data))]
      (sheet/save-workbook! file wb))))
 
+(defn save-raw-data-excel
+  [data file]
+  (let [wb (sheet/create-workbook "html" data)]
+    (sheet/save-workbook! file wb)))
+
 (defn read-csv [file]
   (with-open [reader (io/reader file)]
     (doall

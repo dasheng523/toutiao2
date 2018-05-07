@@ -11,7 +11,7 @@
   (:import [javax.imageio ImageIO]))
 
 "--proxy-server=socks5://127.0.0.1:55555"
-(defn- instagram-driver []
+(defn instagram-driver []
   (chrome
    {:path-driver (.getPath (io/resource (tdriver/get-chromedriver-path)))
     ;:size [375 667]
@@ -158,21 +158,6 @@
   (instagram-home driver)
   (recovery-cookies driver "dasheng523@163.com")
   (instagram-home driver))
-
-(def driver (instagram-driver))
-(quit driver)
-
-(recovery-login driver)
-(do-follow-user driver)
-#_(comment-user driver)
-
-
-(defn get-image-dime [file]
-  (imgresize/dimensions (ImageIO/read file)))
-
-
-#_(do-follow-user driver)
-#_(comment-index driver 20)
 
 
 

@@ -6,14 +6,21 @@
             [compojure.api.sweet :as api]
             [schema.core :as s]
             [toutiao2.zawu.niushida :as niushida]
-            [cheshire.core :as json]))
+            [cheshire.core :as json]
+            [clojure.java.io :as io]
+            [muuntaja.core :as muuntaja])
+  (:import (java.io File)))
 
 (def mycharset (if (isWindows?) "gbk" "utf-8"))
 
 (compojure/defroutes zawu-routes
   (GET "/zawu" []
        (-> (layout/render "zawu/index.html")
-           (charset mycharset))))
+           (charset mycharset)))
+  (POST "/zawu/download" []
+       (-> (niushida/create-markbad-file)
+           (file-response)
+           (header "Content-Type" "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))))
 
 (s/defschema app-status
   {:platform String
@@ -68,8 +75,19 @@
              :query-params []
              :summary      "任务状态"
              (ok (niushida/app-status)))
+    #_(api/POST "/download" []
+              :return File
+              :produces ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]
+              (-> (niushida/create-markbad-file)
+                  #_(io/resource "docs/docs.md")
+                  (file-response)
+                  #_(io/input-stream)
+                  #_(ok)
+                  #_(header "Content-Type" "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                  (muuntaja/disable-response-encoding)))
     (api/POST "/result-page" []
               :return [result-msg]
               :form-params [page :- s/Num]
               :summary "获取结果页面"
               (ok (niushida/result-page page 10)))))
+
