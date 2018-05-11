@@ -7,8 +7,7 @@
             [clojure.string :as str]
             [toutiao2.config :refer [env]]
             [net.cgrand.enlive-html :as enlive]
-            [flake.core :as flake]
-            [flake.utils :as flake-utils]
+            [clj-uuid :as uuid]
             [digest :as digest])
   (:import (java.io StringReader PushbackReader FileReader FileWriter File)))
 
@@ -180,10 +179,8 @@
 (defn rand-idstr
   "生成随机字符串，唯一的"
   []
-  (->> (repeatedly flake/generate!)
-       first
-       flake/flake->bigint
-       flake-utils/base62-encode))
+  (uuid/v1))
+
 
 (defn list-functions [namespace]
   (keys (ns-publics namespace)))

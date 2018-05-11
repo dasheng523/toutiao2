@@ -41,7 +41,6 @@
         extra (extra-words)]
     (str main " " extra)))
 
-
 (defonce result-container (atom #{}))
 
 (defn handle-content [url title platform content pagetime]
@@ -57,6 +56,8 @@
               :pagetime (or pagetime "暂无")
               :ctime (System/currentTimeMillis)
               :platform platform}))))
+
+
 
 (defn search-driver []
   (chrome
@@ -350,7 +351,7 @@
 ;; 需要登陆的平台有知乎，百度，微博（能自动登陆）
 (def platforms
   #_[:zhihu :tieba :baidu :weibo :souhu]
-  [:tieba :weibo])
+  [:tieba])
 
 (defn create-driver-map []
   (reduce #(assoc %1 %2 (search-driver)) {} platforms))
@@ -441,6 +442,7 @@
         (->> (map #(if (some #{(get % :id)} @badinfos)
                      (assoc % :isbad true)
                      (assoc % :isbad false)))))))
+
 
 (def excel-fileds [:title :url :badword :platform :pagetime])
 

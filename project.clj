@@ -61,8 +61,8 @@
                  [org.clojure/java.jdbc "0.7.5"]            ; jdbc
                  [digest "1.4.6"]                           ; 加密用的
                  [javax.xml.bind/jaxb-api "2.2.8"]          ; xml
-                 [flake "0.4.5"]                            ; 生成唯一字符串
                  [hikari-cp "2.2.0"]                        ; 数据库连接池
+                 [danlentz/clj-uuid "0.1.7"]
                  [tongue "0.2.4"]                           ; i18n
                  [image-resizer "0.1.10"]                   ; 图片裁剪
                  [com.draines/postal "2.0.2"]
