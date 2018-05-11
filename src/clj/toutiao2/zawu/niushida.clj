@@ -23,7 +23,8 @@
         (->> (reset! niushida-config)))))
 
 (defn- badwords []
-  (:badword @niushida-config))
+  (:badwords @niushida-config))
+
 
 (defn- has-badwords? [s]
   (some #(str/includes? s %)
@@ -39,6 +40,7 @@
   (for [main (main-words)
         extra (extra-words)]
     (str main " " extra)))
+
 
 (defonce result-container (atom #{}))
 
@@ -73,7 +75,7 @@
      {:type "page load" :ms timeout}
      _))
   ([driver]
-   (set-driver-timeout driver 5000)))
+   (set-driver-timeout driver (* 15 1000))))
 
 (defn is-has-texts [source ks]
   (if (empty? ks)
@@ -102,7 +104,7 @@
                        {:tag :div :class "ant-card-body"}
                        {:tag :a}]]
       (when (and (exists? driver detail-node)
-                 (< i 20))
+                 (< i 200))
         (scroll-query driver detail-node)
         (click driver detail-node)
         (wait 1)
@@ -151,7 +153,7 @@
   (go driver "https://www.baidu.com")
   (fill driver {:css "input.s_ipt"} searchkey ek/enter)
   (wait 2)
-  (dotimes [n 1]
+  (dotimes [n 5]
     (baidu-current-page driver)
     (when (exists? driver {:css "div#page > a:last-child"})
       (click driver {:css "div#page > a:last-child"})
@@ -214,7 +216,7 @@
   (fill-human driver {:css "input.W_input"} kword)
   (fill driver {:css "input.W_input"} ek/enter)
   (wait 3)
-  (dotimes [n 1]
+  (dotimes [n 5]
     (weibo-search-current-page driver)
     (when (and (exists? driver {:tag :a :class "page next S_txt1 S_line1"})
                (get-element-text driver
@@ -233,7 +235,7 @@
          timenode (into node [{:css ".ContentItem-time a span"}])
          bads (badwords)]
      (when (and (exists? driver node)
-                (< index 10))
+                (< index 100))
        (scroll-query driver node)
        (when (and (exists? driver comment)
                   (str/includes? (get-element-text driver comment)
@@ -298,7 +300,7 @@
   (go driver "https://tieba.baidu.com/index.html")
   (fill-human driver {:tag :input :name "kw1"} kword)
   (fill driver {:tag :input :name "kw1"} ek/enter)
-  (loop [n 1]
+  (loop [n 10]
     (tieba-page driver)
     (when (and
            (exists? driver {:css "a.next"})
@@ -332,7 +334,7 @@
   (go driver "https://tieba.baidu.com/index.html")
   (fill-human driver {:css ".search_ipt"} "PHP")
   (click driver {:css ".j_search_post"})
-  (loop [n 1]
+  (loop [n 10]
     (when (< n 10)
       (wait 3)
       (tieba-allba-search-page driver)
@@ -347,7 +349,8 @@
 
 ;; 需要登陆的平台有知乎，百度，微博（能自动登陆）
 (def platforms
-  [:zhihu :tieba :baidu :weibo :souhu])
+  #_[:zhihu :tieba :baidu :weibo :souhu]
+  [:tieba :weibo])
 
 (defn create-driver-map []
   (reduce #(assoc %1 %2 (search-driver)) {} platforms))
@@ -381,18 +384,16 @@
   (doseq [[_ driver] driver-map]
     (quit driver)))
 
-(defn search-multi-driver [driver-map kwords]
-  (reduce (fn [col n]
-            (let [driver (get driver-map n)
-                  handler (get platform-search-handler n)]
-              (assoc col n (future (doseq [kword kwords]
-                                     (handler driver kword))))))
-          {} platforms))
-
 
 (defonce driver-map (atom nil))
 (defonce task-futures (atom {}))
 
+(defn search-multi-driver [driver-map kwords]
+  (doseq [plat platforms]
+    (let [driver (get driver-map plat)
+          handler (get platform-search-handler plat)
+          ft (future (doseq [kword kwords] (handler driver kword)))]
+      (swap! task-futures assoc plat ft))))
 
 (defn init-app []
   (load-config)
@@ -404,12 +405,12 @@
          (search-multi-driver @driver-map kwords)))
 
 (defn stop-app []
-  #_(when @driver-map
+  (when @driver-map
       (quit-drivers @driver-map)
     (reset! driver-map nil))
   (when @task-futures
     (doseq [f @task-futures]
-      (future-cancel f)))
+      (future-cancel (second f))))
   (reset! result-container #{}))
 
 (defn app-status []
@@ -443,11 +444,12 @@
 
 (def excel-fileds [:title :url :badword :platform :pagetime])
 
-(reset! result-container [{:title "aaaa" :url "123" :badword "4422" :platform :zhihu :pagetime "12345" :id 1}
+#_(reset! result-container [{:title "aaaa" :url "123" :badword "4422" :platform :zhihu :pagetime "12345" :id 1}
                           {:title "aaaa" :url "123" :badword "4422" :platform :zhihu :pagetime "12345" :id 2}
                           {:title "aaaa" :url "123" :badword "4422" :platform :zhihu :pagetime "12345" :id 3}])
 
-(reset! badinfos [1])
+#_(reset! badinfos [1])
+#_(quit-drivers @driver-map)
 
 (defn markbad-list []
   (let [list (filter #(some #{(get % :id)} @badinfos)

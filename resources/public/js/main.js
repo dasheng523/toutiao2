@@ -115,7 +115,7 @@ $(function() {
   });
 
     $('#downloadbtn').click(function() {
-        var $eleForm = $("<form method='get'></form>");
+        var $eleForm = $("<form method='post'></form>");
         $eleForm.attr("action","/zawu/download");
         $(document.body).append($eleForm);
         $eleForm.submit();

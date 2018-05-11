@@ -65,6 +65,7 @@
                  [hikari-cp "2.2.0"]                        ; 数据库连接池
                  [tongue "0.2.4"]                           ; i18n
                  [image-resizer "0.1.10"]                   ; 图片裁剪
+                 [com.draines/postal "2.0.2"]
                  #_[opencv/opencv "3.3.1"]
                  #_[opencv/opencv-native "3.3.1"]]
 
