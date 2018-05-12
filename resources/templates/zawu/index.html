@@ -21,7 +21,26 @@
     </head>
     <body>
         <h3 class="text-center">负面信息检测系统</h3>
-
+        <table class="table table-bordered">
+            <tr>
+                <td id="baidu-status">
+                    <input type="checkbox" name="platform" value="baidu"> 百度
+                </td>
+                <td id="tieba-status">
+                    <input type="checkbox" name="platform" value="tieba"> 贴吧
+                </td>
+                <td id="zhihu-status">
+                    <input type="checkbox" name="platform" value="zhihu"> 知乎
+                </td>
+                <td id="weibo-status">
+                    <input type="checkbox" name="platform" value="weibo"> 微博
+                </td>
+                <td id="souhu-status">
+                    <input type="checkbox" name="platform" value="souhu"> 搜狐
+                </td>
+            </tr>
+        </table>
+        <hr>
         <form id="form">
             <div class="flex flex-center margin-top">
                 <div class="btn-group btn-group-toggle" data-toggle="buttons">
@@ -52,23 +71,6 @@
             <button type="button" class="btn btn-primary" id="startbtn">开始搜索</button>
         </div>
 
-        <hr>
-        <table class="table table-bordered">
-            <tr>
-                <td>百度</td>
-                <td>贴吧</td>
-                <td>知乎</td>
-                <td>微博</td>
-                <td>搜狐</td>
-            </tr>
-            <tr>
-                <td id="baidu-status">未开始</td>
-                <td id="tieba-status">未开始</td>
-                <td id="zhihu-status">未开始</td>
-                <td id="weibo-status">未开始</td>
-                <td id="souhu-status">未开始</td>
-            </tr>
-        </table>
         <hr>
         <h3 class="text-center margin-top30">
             搜索结果
@@ -102,6 +104,10 @@
                 </li>
             </ul>
         </nav>
+
+        <form method="post" action="/zawu/download" id="downloadfile">
+            {% csrf-field %}
+        </form>
 
         {% script "/js/jquery-3.3.1.min.js" %}
         {% script "/js/bootstrap.min.js" %}

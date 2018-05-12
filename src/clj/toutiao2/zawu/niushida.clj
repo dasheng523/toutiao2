@@ -14,6 +14,19 @@
 
 (defonce niushida-config (atom nil))
 
+(def tieba-limit-page 1)
+(def zhihu-limit-count 5)
+(def weibo-limit-page 1)
+(def baidu-limit-page 1)
+(def souhu-limit-count 5)
+
+(def driver-timeout (* 15 1000))
+
+(defmacro with-try [& body]
+  `(try+
+   ~@body
+   (catch [:type :etaoin/http-error] _# _#)))
+
 (defn load-config []
   (let [path (if (isWindows?)
                (-> config/env :win-dired-path)
@@ -45,7 +58,7 @@
 
 (defn handle-content [url title platform content pagetime]
   (let [bads (badwords)
-        badw (filter #(str/includes? content %) bads)]
+        badw (doall (filter #(str/includes? content %) bads))]
     (when (not-empty badw)
       (println url)
       (swap! result-container conj
@@ -57,17 +70,12 @@
               :ctime (System/currentTimeMillis)
               :platform platform}))))
 
-
-
 (defn search-driver []
   (chrome
    {:path-driver (.getPath (io/resource (tdriver/get-chromedriver-path)))
     :args []
     :args-driver ["--ipc-connection-timeout=1"]
-    :size [1920 800]})
-  #_(firefox
-   {:path-driver (.getPath (io/resource (tdriver/get-firefox-path)))
-    :capabilities {}}))
+    :size [1920 800]}))
 
 (defn set-driver-timeout
   ([driver timeout]
@@ -76,7 +84,7 @@
      {:type "page load" :ms timeout}
      _))
   ([driver]
-   (set-driver-timeout driver (* 15 1000))))
+   (set-driver-timeout driver driver-timeout)))
 
 (defn is-has-texts [source ks]
   (if (empty? ks)
@@ -105,7 +113,7 @@
                        {:tag :div :class "ant-card-body"}
                        {:tag :a}]]
       (when (and (exists? driver detail-node)
-                 (< i 200))
+                 (< i souhu-limit-count))
         (scroll-query driver detail-node)
         (click driver detail-node)
         (wait 1)
@@ -154,7 +162,7 @@
   (go driver "https://www.baidu.com")
   (fill driver {:css "input.s_ipt"} searchkey ek/enter)
   (wait 2)
-  (dotimes [n 5]
+  (dotimes [n baidu-limit-page]
     (baidu-current-page driver)
     (when (exists? driver {:css "div#page > a:last-child"})
       (click driver {:css "div#page > a:last-child"})
@@ -186,10 +194,12 @@
 
 (defn weibo-search-current-page
   ([driver index]
+   (wait 2)
    (let [node [{:tag :div :class "WB_cardwrap S_bg2 clearfix" :index index}]
          readmore (conj node {:tag :a :class "WB_text_opt"})
          timenode (into node [{:tag :div :class "feed_from W_textb"}
                               {:tag :a}])
+         author (conj node {:tag :a :class "W_texta W_fb"})
          comment (into node [{:tag :ul :class "feed_action_info feed_action_row4"}
                              {:tag :li :index 3}
                              {:tag :em}])]
@@ -212,31 +222,31 @@
   ([driver]
    (weibo-search-current-page driver 1)))
 
-
 (defn weibo-search [driver kword]
   (fill-human driver {:css "input.W_input"} kword)
-  (fill driver {:css "input.W_input"} ek/enter)
-  (wait 3)
-  (dotimes [n 5]
+  (with-try
+    (fill driver {:css "input.W_input"} ek/enter))
+  (wait 2)
+  (dotimes [n weibo-limit-page]
     (weibo-search-current-page driver)
     (when (and (exists? driver {:tag :a :class "page next S_txt1 S_line1"})
                (get-element-text driver
                                  {:tag :a :class "page next S_txt1 S_line1"}))
-      (click driver {:tag :a :class "page next S_txt1 S_line1"})
+      (with-try (click driver {:tag :a :class "page next S_txt1 S_line1"}))
       (wait 3))))
-
 
 (defn zhihu-search-current-page
   ([driver index]
-   (let [node [{:tag :div :class "List-item" :index index}]
+   (let [node [{:tag :div :class "Card"} {:tag :div :class "List-item" :index index}]
          readmore (into node [{:css ".RichContent .ContentItem-more"}])
          comment (into node [{:css ".ContentItem"}
                              {:css ".RichContent .ContentItem-action"}])
          urlnode (into node [{:css ".ContentItem-title a"}])
+         titlenore (into node [{:css ".ContentItem-title"}])
          timenode (into node [{:css ".ContentItem-time a span"}])
          bads (badwords)]
      (when (and (exists? driver node)
-                (< index 100))
+                (< index zhihu-limit-count))
        (scroll-query driver node)
        (when (and (exists? driver comment)
                   (str/includes? (get-element-text driver comment)
@@ -246,21 +256,20 @@
        (when (exists? driver readmore)
          (click driver readmore)
          (wait 1))
-       (let [badw (filter #(str/includes? (get-element-text driver node) %) bads)]
-         (when badw
-           (handle-content (get-element-attr driver urlnode :href)
-                           "知乎"
-                           :zhihu
-                           (get-element-text driver node)
-                           (if (exists? driver timenode)
-                             (get-element-text driver timenode)))))
+       (handle-content (get-element-attr driver urlnode :href)
+                       (get-element-text driver titlenore)
+                       :zhihu
+                       (get-element-text driver node)
+                       (if (exists? driver timenode)
+                         (get-element-text driver timenode)))
        (recur driver (+ index 1)))))
   ([driver]
    (zhihu-search-current-page driver 1)))
 
 
 (defn zhihu-search [driver kword]
-  (go driver (str "https://www.zhihu.com/search?type=content&q=" kword))
+  (with-try
+    (go driver (str "https://www.zhihu.com/search?type=content&q=" kword)))
   (wait 3)
   (zhihu-search-current-page driver))
 
@@ -268,11 +277,12 @@
 (defn tieba-content [driver]
   (if (exists? driver {:css ".p_postlist"})
     (some-> (get-element-text driver {:css ".p_postlist"})
-            (->> (handle-content (get-url driver)
-                                 (get-title driver)
-                                 :tieba
-                                 (if (exists? driver {:css ".p_tail li:nth-child(2)"})
-                                   (get-element-text driver {:css ".p_tail li:nth-child(2)"}))))))
+            (#(handle-content (get-url driver)
+                              (get-title driver)
+                              :tieba
+                              %
+                              (if (exists? driver {:css ".tail-info:nth-child(3)"})
+                                (get-element-text driver {:css ".tail-info:nth-child(3)"}))))))
   (when (and (exists? driver {:css ".l_posts_num a:nth-last-child(2)"})
              (= (get-element-text driver {:css ".l_posts_num a:nth-last-child(2)"}) "下一页"))
     (click driver {:css ".l_posts_num a:nth-last-child(2)"})
@@ -297,11 +307,13 @@
   ([driver]
    (tieba-page driver 1)))
 
+
 (defn tieba-search [driver kword]
   (go driver "https://tieba.baidu.com/index.html")
   (fill-human driver {:tag :input :name "kw1"} kword)
   (fill driver {:tag :input :name "kw1"} ek/enter)
-  (loop [n 10]
+  (wait 3)
+  (loop [n tieba-limit-page]
     (tieba-page driver)
     (when (and
            (exists? driver {:css "a.next"})
@@ -349,12 +361,15 @@
 
 
 ;; 需要登陆的平台有知乎，百度，微博（能自动登陆）
-(def platforms
-  #_[:zhihu :tieba :baidu :weibo :souhu]
-  [:tieba])
+(defonce platforms (atom #{}))
+
+(defn set-platforms [k del]
+  (if del
+    (swap! platforms disj k)
+    (swap! platforms conj k)))
 
 (defn create-driver-map []
-  (reduce #(assoc %1 %2 (search-driver)) {} platforms))
+  (reduce #(assoc %1 %2 (search-driver)) {} @platforms))
 
 
 (def platform-login-urls
@@ -373,13 +388,11 @@
    :souhu #'souhu-search})
 
 
-(defn init-drivers [driver-map]
-  (load-config)
-  (doseq [[plat driver] driver-map]
-    (set-driver-timeout driver)
-    (try+
-     (go driver (get platform-login-urls plat))
-     (catch [:type :etaoin/http-error] _ _))))
+(defn init-platform [driver plat]
+  (set-driver-timeout driver)
+  (try+
+   (go driver (get platform-login-urls plat))
+   (catch [:type :etaoin/http-error] _ _)))
 
 (defn quit-drivers [driver-map]
   (doseq [[_ driver] driver-map]
@@ -390,20 +403,44 @@
 (defonce task-futures (atom {}))
 
 (defn search-multi-driver [driver-map kwords]
-  (doseq [plat platforms]
+  (doseq [plat @platforms]
     (let [driver (get driver-map plat)
           handler (get platform-search-handler plat)
           ft (future (doseq [kword kwords] (handler driver kword)))]
       (swap! task-futures assoc plat ft))))
 
+(defn reset-app []
+  (when @driver-map
+    (quit-drivers @driver-map))
+  (reset! driver-map #{})
+  (reset! result-container #{})
+  (reset! platforms #{})
+  (when @task-futures
+    (doseq [f @task-futures]
+      (future-cancel (second f))))
+  (reset! task-futures {}))
+
+
 (defn init-app []
   (load-config)
-  (reset! driver-map (create-driver-map))
-  (init-drivers @driver-map))
+  (reset! driver-map
+          (reduce
+           #(let [driver
+                  (or (get @driver-map %2)
+                      (let [dd (search-driver)]
+                        (init-platform dd %2)
+                        dd))]
+              (assoc %1 %2 driver))
+           {}
+           @platforms)))
+
+
+#_(reset-app)
 
 (defn start-app [kwords]
-  (reset! task-futures
-         (search-multi-driver @driver-map kwords)))
+  (if (> (count @platforms) 0)
+    (do (reset! result-container #{})
+        (search-multi-driver @driver-map kwords))))
 
 (defn stop-app []
   (when @driver-map
@@ -411,8 +448,7 @@
     (reset! driver-map nil))
   (when @task-futures
     (doseq [f @task-futures]
-      (future-cancel (second f))))
-  (reset! result-container #{}))
+      (future-cancel (second f)))))
 
 (defn app-status []
   (map #(identity {:platform (name %)
@@ -422,7 +458,8 @@
                              true "已完成"
                              false "正在进行"
                              nil "未开始")})
-       platforms))
+       @platforms))
+
 
 (defonce badinfos (atom #{}))
 
@@ -436,29 +473,21 @@
   (let [mun (count @result-container)]
     (some-> (sort #(compare (:ctime %1) (:ctime %2))
               @result-container)
-        (->> (into []))
-        (subvec (min mun (* page size))
-                (min mun (* (+ 1 page) size)))
-        (->> (map #(if (some #{(get % :id)} @badinfos)
+            (->> (into []))
+            (subvec (min (- mun 1) (* page size))
+                    (min mun (* (+ 1 page) size)))
+            (->> (map #(if (some #{(get % :id)} @badinfos)
                      (assoc % :isbad true)
                      (assoc % :isbad false)))))))
 
-
-(def excel-fileds [:title :url :badword :platform :pagetime])
-
-#_(reset! result-container [{:title "aaaa" :url "123" :badword "4422" :platform :zhihu :pagetime "12345" :id 1}
-                          {:title "aaaa" :url "123" :badword "4422" :platform :zhihu :pagetime "12345" :id 2}
-                          {:title "aaaa" :url "123" :badword "4422" :platform :zhihu :pagetime "12345" :id 3}])
-
-#_(reset! badinfos [1])
-#_(quit-drivers @driver-map)
+(def excel-fileds [:title :url :platform :pagetime])
 
 (defn markbad-list []
   (let [list (filter #(some #{(get % :id)} @badinfos)
                      @result-container)]
     (cons (map name excel-fileds)
           (map (fn [item]
-                 (map #(name (get item %)) excel-fileds))
+                 (map #(str (get item %)) excel-fileds))
                list))))
 
 (defn create-markbad-file []
