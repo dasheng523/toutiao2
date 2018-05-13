@@ -10,6 +10,7 @@
 @sut/result-container
 (count @sut/result-container)
 
+(sut/reset-app)
 @sut/task-futures
 
 (doseq [k ["纽仕达" "电商之家"]]
