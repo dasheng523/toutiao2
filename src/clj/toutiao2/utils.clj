@@ -198,6 +198,12 @@
   (with-open [r (PushbackReader. (FileReader. (clojure.java.io/file file)))]
     (read r)))
 
+(defmacro with-try [& body]
+  `(try
+     ~@body
+     (catch Exception e#
+       (log/error e#))))
+
 
 (defn lazy-contains? [col k]
   (some #{k} col))

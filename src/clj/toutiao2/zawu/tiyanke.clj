@@ -7,6 +7,7 @@
             [honeysql.core :as sql]
             [honeysql.helpers :refer :all :as helpers :exclude [update]]
             [clojure.tools.logging :as log]
+            [toutiao2.utils :as utils]
             [clojure.string :as str]))
 
 
@@ -64,7 +65,6 @@
          sqlmap (if (get-first table idkey idval)
                   (update-fn)
                   (insert-fn))]
-     (log/info sqlmap)
      (sql-execute! sqlmap)))
   ([table data]
    (save-simple-data! table data :id)))
@@ -73,8 +73,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;; 抓取
 
-(def cookies "uuid=4d768a970e22495f992d.1525314072.1.0.0; __mta=41884189.1525314095769.1525314095769.1525314095769.1; ci=30; rvct=30; _lxsdk_cuid=163383b86ddc8-0f4f2624a7c373-3961430f-1fa400-163383b86ddc8; _lxsdk_s=163383b86df-d72-47f-b42%7C%7C2")
 (def user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36")
+
+(defn generate-cookies []
+  (str "uuid=2af9d5bb1152b" (str (+ 9000000 (rand-int 999999))) ".1525442542.0.0.0; oc=JEjjQ7Jc8c-lNlb2siBYJpEHpJlxC39C-I5qe8HP8QFzrTdlB_H01fixKV3cei8pXq_C9y4ksVKlPhRauSaN2urkXPWRaTycWW6otgtzztLqJwJ00tflfMOZ8p7WI0j1ji8cBwi8vY5jLqctRfNlbh-JUQLRxGVhMw4AYFYqWw8; _lxsdk_cuid=1632b763347c8-026fa93fe70685-336c7b05-fa000-1632b763347c8; __utma=211559370.1361816146.1525442560.1525442560.1525442560.1; __utmz=211559370.1525442560.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); __utmv=211559370.|1=city=shenzhen=1; ci=30; rvct=30%2C301; __mta=152508678.1525442948211.1526177131313.1526180985582.10; _lx_utm=utm_source%3DBaidu%26utm_medium%3Dorganic; client-id=b0e1aaa0-6ff2-48be-a0f1-b5868d679dad; _lxsdk_s=1635ed082d1-3de-d-aea%7C%7C7"))
 
 (defn get-list-data [kword city cateId areaId page]
   (let [pagesize 32
@@ -82,8 +84,7 @@
         url (str "http://apimobile.meituan.com/group/v4/poi/pcsearch/" city "?uuid=4d768a970e22495f992d.1525314072.1.0.0&userid=-1&limit=" pagesize "&offset=" offset "&cateId=" cateId "&q=" kword "&areaId=" areaId)]
     (some-> url
             (http/get {:headers {"User-Agent" user-agent
-                                 "Cookie" cookies}
-                       :debug true})
+                                 "Cookie" (generate-cookies)}})
             :body
             (json/parse-string true))))
 
@@ -91,7 +92,7 @@
 (defn get-detail-data [id]
   (let [url (str "http://www.meituan.com/deal/" id ".html")
         result-html (-> (http/get url {:headers {"User-Agent" user-agent
-                                                 "Cookie" cookies}})
+                                                 "Cookie" (generate-cookies)}})
                         :body)
         data (some-> (re-find #"_appState = (.*?);</script>" result-html)
                      second
@@ -123,7 +124,7 @@
                         [:phone [:poiList :dealPoisInfo 0 :phone]]])
             (update :images #(str/join ";" (map :image %)))
             (update :dealId str)
-            (assoc :original_data (json/generate-string data)))))
+            (assoc :original_data (str (json/generate-string data))))))
 
 (defn parse-item-data [data]
   (some-> data
@@ -135,7 +136,7 @@
                       :city
                       :address
                       [:shop_id [:id]]])
-          (assoc :original_data (json/generate-string data))))
+          (assoc :original_data (str (json/generate-string data)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 业务逻辑
@@ -143,20 +144,34 @@
   (loop [page 1]
     (let [source (get-list-data kword city cateid areaid page)
           list (get-in source [:data :searchResult])]
-      #_(println source)
-      (when (not-empty list)
+      (when (and (not-empty list)
+                 (< page 40))
         (doseq [item list]
           (save-simple-data! :tiyanke_shop
                              (parse-item-data item)
                              :shop_id)
-          )))))
+          (doseq [deal (:deals item)]
+            (Thread/sleep 1000)
+            (println "==================")
+            (some-> (get deal :id)
+                    (parse-detail-data)
+                    (#(utils/with-try
+                        (save-simple-data! :tiyanke_detail % :dealId))))))
+        (recur (+ page 1))))))
+
 
 #_(get-all-list "体验课" 10 -1 6)
+
+(def areas [28 29 30 32 33 9553 31 9535 23420])
+#_(doseq [area areas]
+  (get-all-list "体验课" 30 -1 area))
+
+#_(get-detail-data 34628388)
 
 #_(println (:deselect-all (parse-detail-data "40330420")))
 #_(let [data (parse-detail-data "40330420")]
   (save-simple-data! :tiyanke_detail data :dealId))
 
 
-(get-list-data "体验课" 10 -1 6 35)
+#_(get-list-data "体验课" 10 -1 6 35)
 "\"imageText\":(.*?),\"navbar\""
