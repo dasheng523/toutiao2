@@ -6,7 +6,7 @@
    [mount.core :refer [defstate] :as mount]
    [clojure.java.jdbc :as jdbc]
    [honeysql.core :as sql]
-   [honeysql.helpers :refer :all :as helpers :exclue [update]]
+   [honeysql.helpers :refer :all :as helpers :exclude [update]]
    [clojure.string :as str]))
 
 (defstate shop-datasource
