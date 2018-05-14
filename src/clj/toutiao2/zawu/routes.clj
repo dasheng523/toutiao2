@@ -70,21 +70,15 @@
               :summary      "标记负面信息"
               (do (niushida/mark-bad id del)
                   (ok "ok")))
-    (api/POST "/status" []
-             :return       [app-status]
-             :query-params []
-             :summary      "任务状态"
-             (ok (niushida/app-status)))
-    #_(api/POST "/download" []
-              :return File
-              :produces ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]
-              (-> (niushida/create-markbad-file)
-                  #_(io/resource "docs/docs.md")
-                  (file-response)
-                  #_(io/input-stream)
-                  #_(ok)
-                  #_(header "Content-Type" "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                  (muuntaja/disable-response-encoding)))
+    (api/POST "/set-platforms" []
+              :return String
+              :form-params [k :- String, del :- Boolean]
+              :summary "设置要搜索的平台"
+              (do (-> k
+                      keyword
+                      (niushida/set-platforms del))
+                  (ok "ok")))
+
     (api/POST "/result-page" []
               :return [result-msg]
               :form-params [page :- s/Num]

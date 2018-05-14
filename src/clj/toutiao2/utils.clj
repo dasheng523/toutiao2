@@ -179,8 +179,7 @@
 (defn rand-idstr
   "生成随机字符串，唯一的"
   []
-  (uuid/v1))
-
+  (str (uuid/v1)))
 
 (defn list-functions [namespace]
   (keys (ns-publics namespace)))

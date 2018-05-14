@@ -33,7 +33,6 @@ $(function() {
   });
 
   $('#loginbtn').click(function() {
-    $(this).attr('disabled', true);
     $.post("/zawu/login");
   });
 
@@ -49,8 +48,6 @@ $(function() {
       }
     }, 'json');
   }
-
-  setInterval(freshAppStatus, 5000);
 
   var page = 1;
   var listdata = [];
@@ -82,7 +79,7 @@ $(function() {
           ischecked = " checked";
         }
         html += "<td>"
-          + '<input type="checkbox"' + ischecked +' data-id="' + item.id + '">'
+          + '<input class="bad" type="checkbox"' + ischecked +' data-id="' + item.id + '">'
           + "</td>";
         html += "</tr>";
       });
@@ -92,12 +89,18 @@ $(function() {
 
   $('#freshbtn').click(getResult);
 
-  $('table').on('click', 'input', function() {
+  $('table').on('click', 'input.bad', function() {
     var id = $(this).data('id');
     var del = !$(this).prop('checked');
     $.post("/zawu/markbad", {"id": id, "del": del}, function() {
 
     });
+  });
+
+  $("input[name=platform]").click(function() {
+    var k = $(this).val();
+    var del = !$(this).prop('checked');
+    $.post("/zawu/set-platforms", {"k": k, "del": del});
   });
 
   $('.prepage').click(function() {
@@ -114,11 +117,8 @@ $(function() {
     getResult();
   });
 
-    $('#downloadbtn').click(function() {
-        var $eleForm = $("<form method='post'></form>");
-        $eleForm.attr("action","/zawu/download");
-        $(document.body).append($eleForm);
-        $eleForm.submit();
-    });
+  $('#downloadbtn').click(function() {
+    $('#downloadfile').submit();
+  });
 
 });
