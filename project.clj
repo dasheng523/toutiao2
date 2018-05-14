@@ -46,7 +46,8 @@
                  [slingshot "0.12.2"]                       ; 异常处理
                  [day8.re-frame/http-fx "0.1.4"]            ; 前端http
                  [clj-webdriver/clj-webdriver "0.7.2"]
-                 [org.seleniumhq.selenium/selenium-java "3.4.0"]
+                 [org.seleniumhq.selenium/selenium-java "2.47.1"]
+                 [org.seleniumhq.selenium/selenium-server "2.47.1" :exclusions [org.bouncycastle/bcprov-jdk15on org.bouncycastle/bcpkix-jdk15on]]
                  [etaoin "0.2.1"] ; 跟webdriver一样，是操作浏览器的
                  [clj-http "3.7.0"]
                  [enlive "1.1.6"]
@@ -149,7 +150,7 @@
                                  [figwheel-sidecar "0.5.14"]
                                  [org.apache.httpcomponents/httpcore "4.4"]
                                  [org.clojure/core.cache "0.7.1"]
-                                 [org.seleniumhq.selenium/selenium-server "2.48.2" :exclusions [org.bouncycastle/bcprov-jdk15on org.bouncycastle/bcpkix-jdk15on]]]
+                                 ]
                   :plugins      [[com.jakemccrary/lein-test-refresh "0.19.0"]
                                  [lein-doo "0.1.8"]
                                  [lein-figwheel "0.5.14"]
