@@ -14,11 +14,11 @@
 
 (defonce niushida-config (atom nil))
 
-(def tieba-limit-page 1)
-(def zhihu-limit-count 5)
-(def weibo-limit-page 1)
-(def baidu-limit-page 1)
-(def souhu-limit-count 5)
+(def tieba-limit-page 5)
+(def zhihu-limit-count 50)
+(def weibo-limit-page 5)
+(def baidu-limit-page 6)
+(def souhu-limit-count 50)
 
 (def driver-timeout (* 15 1000))
 
