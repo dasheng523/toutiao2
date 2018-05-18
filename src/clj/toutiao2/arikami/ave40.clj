@@ -1,7 +1,8 @@
 (ns toutiao2.arikami.ave40
   (:require [clj-http.client :as http]
             [cheshire.core :as json]
-            [toutiao2.utils :as utils]))
+            [toutiao2.utils :as utils]
+            [clojure.string :as str]))
 
   (def api-customer-url "http://61.144.170.188:1496/OPEN/api/Customer/ERPCUSTOMER")
   (def api-products-url "http://61.144.170.188:1496/OPEN/api/Item/Query")
@@ -48,6 +49,12 @@
                        (if (> totalpage pagenum)
                          (all-products (+ page 1))))))))
 
+
+(defn filter-ref []
+  (utils/save-to-excel
+   (filter #(and (not-empty (str/trim (get % :REP_0))))
+           (utils/read-excel->map "/Users/huangyesheng/Desktop/customers.xlsx" "html"))
+   "/Users/huangyesheng/Desktop/customers-ref.xlsx"))
 
 
 #_(utils/save-to-excel

@@ -172,6 +172,4 @@
 #_(let [data (parse-detail-data "40330420")]
   (save-simple-data! :tiyanke_detail data :dealId))
 
-
 #_(get-list-data "体验课" 10 -1 6 35)
-"\"imageText\":(.*?),\"navbar\""
