@@ -35,6 +35,7 @@
         (json/parse-string true)
         (->> (reset! niushida-config)))))
 
+
 (defn- badwords []
   (:badwords @niushida-config))
 

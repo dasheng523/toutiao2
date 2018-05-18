@@ -27,7 +27,7 @@
           (log/info "stoping db...")
           (hikari/close-datasource (:datasource shop-datasource))))
 
-(mount/start #'shop-datasource)
+#_(mount/start #'shop-datasource)
 
 (defn sql-query
   "查询sql-map，并返回结果"
