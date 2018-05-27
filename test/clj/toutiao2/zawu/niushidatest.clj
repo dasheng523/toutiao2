@@ -5,6 +5,7 @@
             [clojure.test :as t]))
 
 (def driver (sut/search-driver))
+(sut/set-driver-timeout driver)
 
 (sut/load-config)
 @sut/result-container
@@ -14,7 +15,18 @@
 @sut/task-futures
 
 (doseq [k ["纽仕达" "电商之家"]]
-  (sut/zhihu-search driver k))
+  (sut/tieba-allba-search driver k))
+
+
+(sut/tieba-allba-search-page driver)
+
+#_(when (and
+       (exists? driver {:css "a.next"})
+       (str/includes? (get-element-text driver {:css "a.next"}) "下一页"))
+  (click driver {:css "a.next"})
+  (wait 3)
+  #_(recur (+ n 1)))
+
 
 (swap! sut/task-futures assoc :a :a)
 

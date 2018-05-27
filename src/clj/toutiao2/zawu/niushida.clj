@@ -28,12 +28,12 @@
    (catch [:type :etaoin/http-error] _# _#)))
 
 (defn load-config []
-  (let [path (if (isWindows?)
+  (let [kws [:badwords :mainwords :extrawords]
+        path (if (isWindows?)
                (-> config/env :win-dired-path)
-               (-> config/env :mac-dired-path))]
-    (-> (slurp (str path "/niushida-config.json"))
-        (json/parse-string true)
-        (->> (reset! niushida-config)))))
+               (-> config/env :mac-dired-path))
+        data (utils/read-excel->map (str path "/config.xls") "html")]
+    (reduce #(assoc %1 %2 (remove empty? (map %2 data))) {} kws)))
 
 
 (defn- badwords []
@@ -172,7 +172,7 @@
 (defn baidu-search [driver searchkey]
   (let [extra-words (:extrawords @niushida-config)]
     (doseq [word extra-words]
-      (baidu-search-keyword driver (str searchkey " " word)))))
+      (baidu-search-keyword driver (str searchkey word)))))
 
 (defn save-cookies [driver user domain]
   (let [fcookie (str (config/get-cookies-path) "/" user "-" domain ".cookies")]
@@ -345,12 +345,10 @@
    (tieba-allba-search-page driver 1)))
 
 (defn tieba-allba-search [driver kword]
-  (go driver "https://tieba.baidu.com/index.html")
-  (fill-human driver {:css ".search_ipt"} "PHP")
-  (click driver {:css ".j_search_post"})
-  (loop [n 10]
-    (when (< n 10)
-      (wait 3)
+  (go driver (str "http://tieba.baidu.com/f/search/res?ie=utf-8&qw=" kword))
+  (loop [n 1]
+    (when (< n 2)
+      (wait 5)
       (tieba-allba-search-page driver)
       (wait 1)
       (when (and
@@ -383,7 +381,7 @@
 
 (def platform-search-handler
   {:zhihu #'zhihu-search
-   :tieba #'tieba-search
+   :tieba #'tieba-allba-search
    :baidu #'baidu-search
    :weibo #'weibo-search
    :souhu #'souhu-search})
@@ -436,8 +434,6 @@
            @platforms)))
 
 
-#_(reset-app)
-
 (defn start-app [kwords]
   (if (> (count @platforms) 0)
     (do (reset! result-container #{})
@@ -485,11 +481,15 @@
 
 (defn markbad-list []
   (let [list (filter #(some #{(get % :id)} @badinfos)
+                     (-> (group-by :url @result-container)
+                         first
+                         second)
                      @result-container)]
     (cons (map name excel-fileds)
           (map (fn [item]
                  (map #(str (get item %)) excel-fileds))
                list))))
+
 
 (defn create-markbad-file []
   (let [f (str (config/get-download-path) "/" (utils/rand-idstr) ".xlsx")]

@@ -12,3 +12,10 @@
                        :subject subject
                        :body [{:type "text/html"
                                :content content}]}))
+
+#_(def content (slurp "/Users/huangyesheng/Desktop/vapor.html"))
+
+#_(send-email "business-us@actopp.com"
+            "398822391@qq.com"
+            "THE BIG CONFIDENCE PLAN, VAPOR BY ARIKAMI PRESENTS YOU"
+            content)

@@ -27,7 +27,7 @@
           (log/info "stoping db...")
           (hikari/close-datasource (:datasource shop-datasource))))
 
-#_(mount/start #'shop-datasource)
+(mount/start #'shop-datasource)
 
 (defn sql-query
   "查询sql-map，并返回结果"
@@ -101,6 +101,7 @@
                      (dissoc :comFooter))]
     data))
 
+
 (defn parse-map [data rules]
   (->> (map (fn [item]
              (if (keyword? item)
@@ -123,8 +124,7 @@
                         [:shop_id [:poiList :dealPoisInfo 0 :poiId]]
                         [:phone [:poiList :dealPoisInfo 0 :phone]]])
             (update :images #(str/join ";" (map :image %)))
-            (update :dealId str)
-            (assoc :original_data (str (json/generate-string data))))))
+            (update :dealId str))))
 
 (defn parse-item-data [data]
   (some-> data
@@ -135,8 +135,7 @@
                       :backCateName
                       :city
                       :address
-                      [:shop_id [:id]]])
-          (assoc :original_data (str (json/generate-string data)))))
+                      [:shop_id [:id]]])))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 业务逻辑
@@ -147,26 +146,73 @@
       (when (and (not-empty list)
                  (< page 40))
         (doseq [item list]
+          (println "==================")
           (save-simple-data! :tiyanke_shop
                              (parse-item-data item)
                              :shop_id)
+          (utils/with-try (save-simple-data! :tiyanke_origin
+                                             {:type 1
+                                              :data (json/generate-string item)
+                                              :entity_id (str "1-" (get item :id))}
+                                             :entity_id))
           (doseq [deal (:deals item)]
-            (Thread/sleep 1000)
-            (println "==================")
-            (some-> (get deal :id)
-                    (parse-detail-data)
-                    (#(utils/with-try
-                        (save-simple-data! :tiyanke_detail % :dealId))))))
+            (Thread/sleep 500)
+            (println (get deal :id))
+            (when-let [dealdata (some-> (get deal :id)
+                                        (parse-detail-data))]
+              (some-> dealdata
+                      (#(utils/with-try
+                          (save-simple-data! :tiyanke_detail % :dealId)
+                          (save-simple-data! :tiyanke_origin
+                                             {:type 2
+                                              :data (json/generate-string dealdata)
+                                              :entity_id (str "2-" (get deal :id))}
+                                             :entity_id)))))))
         (recur (+ page 1))))))
 
 
-#_(get-all-list "体验课" 10 -1 6)
+(defn get-city-areas [url]
+  (some-> url
+          (http/get {:headers {"User-Agent" user-agent
+                               "Cookie" (generate-cookies)}})
+          :body
+          (->> (re-find #"children\":(.*?),\"checked"))
+          (second)
+          (json/parse-string true)
+          (->> (mapcat (fn [item]
+                         (map :id (get item :children))))
+               (into #{}))))
 
-(def areas [28 29 30 32 33 9553 31 9535 23420])
-#_(doseq [area areas]
-  (get-all-list "体验课" 30 -1 area))
+(def citys [{:id 10 :url "http://sh.meituan.com/" :name "上海"}
+            {:id 20 :url "http://gz.meituan.com/" :name "广州"}
+            {:id 30 :url "http://sz.meituan.com/" :name "深圳"}
+            {:id 40 :url "http://tj.meituan.com/" :name "天津"}
+            {:id 42 :url "http://xa.meituan.com/" :name "西安"}
+            {:id 45 :url "http://cq.meituan.com/" :name "重庆"}
+            {:id 50 :url "http://hz.meituan.com/" :name "杭州"}
+            {:id 55 :url "http://nj.meituan.com/" :name "南京"}
+            {:id 55 :url "http://nj.meituan.com/" :name "南京"}
+            {:id 59 :url "http://cd.meituan.com/" :name "成都"}
+            {:id 57 :url "http://wh.meituan.com/" :name "武汉"}])
 
-#_(get-detail-data 34628388)
+(defn fecth-city-tiyanke [city]
+  (let [id (get city :id)
+        areas (some-> (get city :url)
+                      (str "s/体验课/")
+                      (get-city-areas))]
+    (doseq [area areas]
+      (println area id)
+      (get-all-list "体验课" id -1 area))))
+
+#_(defonce futs (map #(future (fecth-city-tiyanke %)) citys))
+
+#_(future-done? (second futs))
+
+
+
+
+#_(doseq [area beijing-areas]
+  (get-all-list "体验课" 1 -1 area))
 
 #_(println (:deselect-all (parse-detail-data "40330420")))
 #_(let [data (parse-detail-data "40330420")]
