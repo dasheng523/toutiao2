@@ -405,7 +405,8 @@
   (doseq [plat @platforms]
     (let [driver (get driver-map plat)
           handler (get platform-search-handler plat)
-          ft (future (doseq [kword kwords] (handler driver kword)))]
+          ft (future (do (doseq [kword kwords] (handler driver kword))
+                         (quit driver)))]
       (swap! task-futures assoc plat ft))))
 
 (defn reset-app []
