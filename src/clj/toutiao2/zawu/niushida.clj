@@ -32,13 +32,13 @@
         path (if (isWindows?)
                (-> config/env :win-dired-path)
                (-> config/env :mac-dired-path))
-        data (utils/read-excel->map (str path "/config.xls") "html")]
-    (reduce #(assoc %1 %2 (remove empty? (map %2 data))) {} kws)))
+        data (utils/read-excel->map (str path "/config.xls") "html")
+        config (reduce #(assoc %1 %2 (remove empty? (map %2 data))) {} kws)]
+    (reset! niushida-config config)))
 
 
 (defn- badwords []
   (:badwords @niushida-config))
-
 
 (defn- has-badwords? [s]
   (some #(str/includes? s %)
@@ -56,6 +56,7 @@
     (str main " " extra)))
 
 (defonce result-container (atom #{}))
+
 
 (defn handle-content [url title platform content pagetime]
   (let [bads (badwords)

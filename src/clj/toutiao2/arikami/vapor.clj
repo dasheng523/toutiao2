@@ -1,7 +1,8 @@
 (ns toutiao2.arikami.vapor
   (:require [postal.core :as email]
             [toutiao2.utils :as utils]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [toutiao2.config :as config]))
 
 (def smtp {:host "smtp.exmail.qq.com"
            :user "ecig-wholesale@arikami.com"
@@ -19,11 +20,19 @@
                        :body [{:type "text/html"
                                :content content}]}))
 
-(def content (slurp "/Users/huangyesheng/Desktop/vapor.html"))
+(defn- upload-path []
+  (cond (config/isMac?) (-> config/env :mac-dired-path)
+        (config/isWindows?) (-> config/env :win-dired-path)
+        :else (-> config/env :linux-dired-path)))
 
-(def customers (utils/read-excel->map
-                 "/Users/huangyesheng/Desktop/customers-ref.xlsx"
-                 "html"))
+
+#_(def content (slurp (str (upload-path) "/vapor.html")))
+(def content "")
+
+#_(def customers (utils/read-excel->map
+                (str (upload-path) "/customers-ref.xlsx")
+                "html"))
+(def customers "")
 
 (defn send-customer-email [email]
   (send-email smtp-gmail
@@ -44,5 +53,21 @@
         (catch Exception e
           (log/error e)))
       (recur (rest emails)))))
+
+#_(def goodslist (utils/csv-file->maps "e:/data/catalog_product_20180526_024555.csv"))
+
+#_(def targetgoods
+  (map (fn [n]
+         (-> (update n :price #(* 1.2 (utils/parse-int %)))
+             (dissoc :msrp_display_actual_price_type)))
+       goodslist))
+
+
+#_(utils/maps->csv-file targetgoods "e:/data/catalog_target.csv")
+
+#_(utils/maps->csv-file (take 10 targetgoods) "e:/data/ddd.csv")
+
+#_(utils/maps->csv-file (take 10 goodslist) "e:/data/source.csv")
+
 
 #_(do-logic)

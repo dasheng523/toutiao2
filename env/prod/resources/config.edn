@@ -23,6 +23,10 @@
  :win-dired-path "e:/ttt"
 
  :mac-download-path "/Users/huangyesheng/Documents/pics"
- :mac-cookies-path "/Users/huangyesheng/Documents/cookies/"
+ :mac-cookies-path "/Users/huangyesheng/Documents/cookies"
  :mac-dired-path "/Users/huangyesheng/Documents"
+
+ :linux-download-path "/usr/local/toutiao2-data"
+ :linux-cookies-path "/usr/local/toutiao2-data"
+ :linux-dired-path "/usr/local/toutiao2-data"
 }

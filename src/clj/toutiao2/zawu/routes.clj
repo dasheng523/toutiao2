@@ -8,7 +8,8 @@
             [toutiao2.zawu.niushida :as niushida]
             [cheshire.core :as json]
             [clojure.java.io :as io]
-            [muuntaja.core :as muuntaja])
+            [muuntaja.core :as muuntaja]
+            [toutiao2.arikami.vapor :as vapor])
   (:import (java.io File)))
 
 (def mycharset (if (isWindows?) "gbk" "utf-8"))
@@ -83,5 +84,10 @@
               :return [result-msg]
               :form-params [page :- s/Num]
               :summary "获取结果页面"
-              (ok (niushida/result-page page 10)))))
+              (ok (niushida/result-page page 10)))
+    (api/POST "/send-email" []
+              :return String
+              :summary "发送电子邮件"
+              (do (vapor/do-logic)
+                  "OK"))))
 
