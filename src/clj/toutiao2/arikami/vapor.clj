@@ -27,14 +27,14 @@
 
 
 #_(def content (slurp (str (upload-path) "/vapor.html")))
-(def content "")
+#_(def content "")
 
 #_(def customers (utils/read-excel->map
                 (str (upload-path) "/customers-ref.xlsx")
                 "html"))
-(def customers "")
+#_(def customers "")
 
-(defn send-customer-email [email]
+(defn send-customer-email [email content]
   (send-email smtp-gmail
               "ecig-wholesale@arikami.com"
               email
@@ -45,14 +45,18 @@
 #_(println (send-customer-email "laurent.roger.segura@gmail.com"))
 
 (defn do-logic []
-  (loop [emails (map :ZEMAIL_0 (take 500 customers))]
-    (let [email (first emails)]
-      (log/info email)
-      (try
-        (send-customer-email email)
-        (catch Exception e
-          (log/error e)))
-      (recur (rest emails)))))
+  (let [customers (utils/read-excel->map
+                   (str (upload-path) "/customers-ref.xlsx")
+                   "html")
+        content (slurp (str (upload-path) "/vapor.html"))]
+    (loop [emails (map :ZEMAIL_0 (take 500 customers))]
+      (let [email (first emails)]
+        (log/info email)
+        (try
+          (send-customer-email email content)
+          (catch Exception e
+            (log/error e)))
+        (recur (rest emails))))))
 
 #_(def goodslist (utils/csv-file->maps "e:/data/catalog_product_20180526_024555.csv"))
 
