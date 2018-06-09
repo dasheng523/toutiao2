@@ -4,7 +4,7 @@
             [clojure.tools.logging :as log]
             [toutiao2.config :as config]))
 
-(def smtp {:host "smtp.exmail.qq.com"
+#_(def smtp {:host "smtp.exmail.qq.com"
            :user "ecig-wholesale@arikami.com"
            :pass "Bb12BB!b,a"})
 
@@ -36,7 +36,7 @@
 
 (defn send-customer-email [email content]
   (send-email smtp-gmail
-              "ecig-wholesale@arikami.com"
+              "vapor.arikami@gmail.com"
               email
               "THE BIG CONFIDENCE PLAN, VAPOR BY ARIKAMI PRESENTS YOU"
               content))
