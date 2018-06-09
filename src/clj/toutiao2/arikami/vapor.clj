@@ -10,7 +10,8 @@
 
 (def smtp-gmail {:host "smtp.gmail.com"
                  :user "vapor.arikami@gmail.com"
-                 :pass "arikami38460"})
+                 :pass "arikami38460"
+                 :ssl true})
 
 (defn send-email [smtp from to subject content]
   (email/send-message smtp
