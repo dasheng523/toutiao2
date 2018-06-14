@@ -13,6 +13,16 @@
                  :pass "arikami38460"
                  :ssl true})
 
+(def gmail-list
+  ["vapor.arikami@gmail.com"])
+
+(defn gmail-smtp-gmail [list]
+  (map #(merge {:host "smtp.gmail.com"
+                :user %
+                :pass "arikami38460"
+                :ssl true})
+       list))
+
 (defn send-email [smtp from to subject content]
   (email/send-message smtp
                       {:from from
@@ -27,37 +37,31 @@
         :else (-> config/env :linux-dired-path)))
 
 
-#_(def content (slurp (str (upload-path) "/vapor.html")))
-#_(def content "")
-
-#_(def customers (utils/read-excel->map
-                (str (upload-path) "/customers-ref.xlsx")
-                "html"))
-#_(def customers "")
-
-(defn send-customer-email [email content]
-  (send-email smtp-gmail
+(defn send-customer-email [from-smtp email content]
+  (send-email from-smtp
               "vapor.arikami@gmail.com"
               email
               "THE BIG CONFIDENCE PLAN, VAPOR BY ARIKAMI PRESENTS YOU"
               content))
 
-#_(println (send-customer-email "dasheng523@163.com"))
-#_(println (send-customer-email "laurent.roger.segura@gmail.com"))
-
 (defn do-logic []
   (let [customers (utils/read-excel->map
                    (str (upload-path) "/customers-ref.xlsx")
                    "html")
-        content (slurp (str (upload-path) "/vapor.html"))]
-    (loop [emails (map :ZEMAIL_0 (take 500 customers))]
+        content (slurp (str (upload-path) "/vapor.html"))
+        from-smtp (gmail-smtp-gmail gmail-list)]
+    (loop [emails (map :ZEMAIL_0 customers)
+           n 0]
       (let [email (first emails)]
         (log/info email)
         (try
-          (send-customer-email email content)
+          (send-customer-email (nth from-smtp
+                                    (rem n (count from-smtp)))
+                               email
+                               content)
           (catch Exception e
             (log/error e)))
-        (recur (rest emails))))))
+        (recur (rest emails) (+ n 1))))))
 
 #_(def goodslist (utils/csv-file->maps "e:/data/catalog_product_20180526_024555.csv"))
 
