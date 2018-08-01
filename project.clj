@@ -15,7 +15,8 @@
                  [conman "0.7.1"]
                  [cprop "0.1.11"]
                  [funcool/struct "1.1.0"]
-                 [luminus-jetty "0.1.6"]
+                 [luminus-http-kit "0.1.6"]
+                 #_[luminus-jetty "0.1.6"]
                  [luminus-migrations "0.5.0"]
                  [luminus-nrepl "0.1.4"]
                  [luminus/ring-ttl-session "0.3.2"]
@@ -24,11 +25,11 @@
                  [metosin/muuntaja "0.3.2"]
                  [metosin/ring-http-response "0.9.0"]
                  [mount "0.1.11"]
-                 [org.clojure/clojure "1.9.0-RC2"]
+                 [org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.9.946" :scope "provided"]
                  [org.clojure/tools.cli "0.3.5"]
                  [org.clojure/tools.logging "0.4.0"]
-                 [org.clojure/tools.reader "1.1.0"]
+                 [org.clojure/tools.reader "1.1.1"]
                  [org.webjars.bower/tether "1.4.0"]
                  [org.webjars/bootstrap "4.1.0"]
                  [org.webjars/font-awesome "4.7.0"]
@@ -51,7 +52,7 @@
                  [etaoin "0.2.1"] ; 跟webdriver一样，是操作浏览器的
                  [clj-http "3.7.0"]
                  [enlive "1.1.6"]
-                 [com.taoensso/timbre "4.1.0"]
+                 [com.taoensso/timbre "4.10.0"]
                  [cheshire "5.8.0"] ; json
                  [dk.ative/docjure "1.11.0"]                ; Excel
                  [org.clojure/data.csv "0.1.4"]             ; CSV
@@ -66,6 +67,7 @@
                  [danlentz/clj-uuid "0.1.7"]
                  [tongue "0.2.4"]                           ; i18n
                  [image-resizer "0.1.10"]                   ; 图片裁剪
+                 [com.taoensso/sente "1.12.0"]              ; websocket
                  [com.draines/postal "2.0.2"]
                  #_[opencv/opencv "3.3.1"]
                  #_[opencv/opencv-native "3.3.1"]]

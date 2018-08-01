@@ -9,7 +9,8 @@
             [toutiao2.ajax :refer [load-interceptors!]]
             [toutiao2.events]
             [toutiao2.subs]
-            [toutiao2.views :refer [toutiao-page]])
+            [toutiao2.views :refer [toutiao-page common-page]]
+            [toutiao2.websocket])
   (:import goog.History))
 
 (defn nav-link [uri title page]
@@ -32,7 +33,9 @@
         [:ul.navbar-nav
          [nav-link "#/" "Home" :home]
          [nav-link "#/toutiao" "头条" :toutiao]
-         [nav-link "#/about" "About" :about]]]])))
+         [nav-link "#/about" "About" :about]
+         [nav-link "#/login" "Login" :login]
+         [nav-link "#/common" "爬虫" :common]]]])))
 
 (defn about-page []
   [:div.container
@@ -48,10 +51,27 @@
       [:div {:dangerouslySetInnerHTML
              {:__html (md->html docs)}}]])])
 
+(defn login-page []
+  [:div.container.mt-5
+   [:div.row>div.col-sm-12
+    [:div.card
+     [:div.card-header "登录"]
+     [:div.card-body
+      [:form
+       [:div.form-group
+        [:label "用户名"]
+        [:input.form-control {:placeholder "请输入用户名"}]]
+       [:div.form-group
+        [:label "密码"]
+        [:input.form-control {:placeholder "请输入密码" :type :password}]]
+       [:button.btn.btn-primary "登录"]]]]]])
+
 (def pages
   {:home #'home-page
    :about #'about-page
-   :toutiao #'toutiao-page})
+   :toutiao #'toutiao-page
+   :login #'login-page
+   :common #'common-page})
 
 (defn page []
   [:div
@@ -62,14 +82,19 @@
 ;; Routes
 (secretary/set-config! :prefix "#")
 
+(defn- simple-defroute [kw]
+  (secretary/defroute (str "/" (name kw)) []
+    (rf/dispatch [:set-active-page kw])))
+
+(defn- init-routes []
+  (let [route-keys (keys pages)]
+    (doseq [k route-keys]
+      (simple-defroute k))))
+
 (secretary/defroute "/" []
   (rf/dispatch [:set-active-page :home]))
 
-(secretary/defroute "/about" []
-  (rf/dispatch [:set-active-page :about]))
-
-(secretary/defroute "/toutiao" []
-  (rf/dispatch [:set-active-page :toutiao]))
+(init-routes)
 
 ;; -------------------------
 ;; History

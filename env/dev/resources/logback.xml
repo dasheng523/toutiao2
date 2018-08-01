@@ -28,7 +28,7 @@
     <logger name="org.xnio.nio" level="warn" />
     <logger name="com.zaxxer.hikari" level="warn" />
     <logger name="com.mchange" level="warn" />
-    <logger name="org.eclipse.jetty" level="warn" />
+    <!--<logger name="org.eclipse.jetty" level="warn" />-->
     <root level="DEBUG">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE" />

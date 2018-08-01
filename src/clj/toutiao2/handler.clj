@@ -6,6 +6,7 @@
             [toutiao2.routes.arikami :refer [arikami-routes]]
             [toutiao2.routes.services :refer [service-routes]]
             [toutiao2.routes.oauth :refer [oauth-routes]]
+            [toutiao2.routes.websocket :refer [websocket-app]]
             [compojure.route :as route]
             [toutiao2.env :refer [defaults]]
             [mount.core :as mount]
@@ -38,6 +39,7 @@
 
 (def app-routes
   (routes
+    #'websocket-app
     (-> #'home-routes
         (wrap-routes middleware/wrap-csrf)
         (wrap-routes middleware/wrap-formats))
