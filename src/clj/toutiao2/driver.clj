@@ -46,7 +46,3 @@
   "创建火狐浏览器"
   []
   (firefox default-firefox-config))
-
-#_(def dd (create-proxy-browser))
-#_(go dd "http://www.ip138.com/")
-#_(quit dd)

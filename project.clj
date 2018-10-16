@@ -16,7 +16,6 @@
                  [cprop "0.1.11"]
                  [funcool/struct "1.1.0"]
                  [luminus-http-kit "0.1.6"]
-                 #_[luminus-jetty "0.1.6"]
                  [luminus-migrations "0.5.0"]
                  [luminus-nrepl "0.1.4"]
                  [luminus/ring-ttl-session "0.3.2"]
@@ -53,18 +52,19 @@
                  [clj-http "3.7.0"]
                  [enlive "1.1.6"]
                  [com.taoensso/timbre "4.10.0"]
-                 [cheshire "5.8.0"] ; json
+                 [cheshire "5.8.0"]                         ; json
                  [dk.ative/docjure "1.11.0"]                ; Excel
                  [org.clojure/data.csv "0.1.4"]             ; CSV
                  [prismatic/schema "1.1.7"]                 ; 验证库
                  [com.hankcs/hanlp "portable-1.5.3"]        ; 自然语言库
                  [mysql/mysql-connector-java "5.1.34"]      ; mysql
+                 [org.postgresql/postgresql "42.2.2"]    ; PostgreSQL
                  [honeysql "0.9.1"]                         ; sql
                  [org.clojure/java.jdbc "0.7.5"]            ; jdbc
                  [digest "1.4.6"]                           ; 加密用的
                  [javax.xml.bind/jaxb-api "2.2.8"]          ; xml
                  [hikari-cp "2.2.0"]                        ; 数据库连接池
-                 [danlentz/clj-uuid "0.1.7"]
+                 [danlentz/clj-uuid "0.1.7"]                ; uuid
                  [tongue "0.2.4"]                           ; i18n
                  [image-resizer "0.1.10"]                   ; 图片裁剪
                  [com.taoensso/sente "1.12.0"]              ; websocket
@@ -148,6 +148,7 @@
                                  [binaryage/devtools "0.9.7"]
                                  [com.cemerick/piggieback "0.2.2"]
                                  [directory-naming/naming-java "0.8"]
+                                 [expound "0.7.1"]
                                  [doo "0.1.8"]
                                  [figwheel-sidecar "0.5.14"]
                                  [org.apache.httpcomponents/httpcore "4.4"]

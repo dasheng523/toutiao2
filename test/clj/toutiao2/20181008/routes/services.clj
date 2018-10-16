@@ -3,7 +3,9 @@
             [compojure.api.sweet :refer :all]
             [compojure.api.meta :refer [restructure-param]]
             [buddy.auth.accessrules :refer [restrict]]
-            [buddy.auth :refer [authenticated?]]))
+            [buddy.auth :refer [authenticated?]]
+            [toutiao2.shop.schema :as ss]
+            [toutiao2.zimeiti.toutiao :as toutiao]))
 
 (defn access-error [_ _]
   (unauthorized {:error "unauthorized"}))
@@ -41,11 +43,39 @@
          :query-params [x :- Long, {y :- Long 1}]
          :summary      "测试"
          (ok "你好"))
-    #_(GET "/auth" []
+    (GET "/auth" []
          :return       ss/RespAuth
          :query-params [username :- String, password :- String]
          :summary      "用户授权"
          (ok {:code 200 :message "success" :data {:uname "5566"}})))
+
+  (context "/toutiao" []
+           :tags ["toutiao"]
+
+           (POST "/open" []
+                :return       String
+                :query-params []
+                :summary      "打开头条登陆页"
+                (do (toutiao/open-chrome)
+                    (ok "ok")))
+           (POST "/save-login" []
+                :return       String
+                :query-params [username :- String]
+                :summary      "保存登陆状态"
+                (do (toutiao/do-save-cookies username)
+                    (ok "ok")))
+           (POST "/recover-login" []
+                 :return       String
+                 :query-params [username :- String]
+                 :summary      "恢复登陆状态"
+                 (do (toutiao/do-recover-cookies username)
+                     (ok "ok")))
+           (POST "/autorun" []
+                :return       String
+                :query-params [urls :- [String]]
+                :summary      "执行自动任务"
+                (do (toutiao/doautorun urls)
+                    (ok "ok"))))
 
   (context "/test" []
     :tags ["thingie"]

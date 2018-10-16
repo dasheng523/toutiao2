@@ -7,17 +7,12 @@
  :nrepl-port 7000
  :upload-path "g:/listdata"
  :media-path "g:/listdata"
- :database-url "jdbc:mysql://127.0.0.1/shop?user=root&password=a5235013"
- :database-spec {:adapter            "mysql"
-                 :username           "root"
-                 :password           "a5235013"
-                 :database-name      "shop"
-                 :server-name        "127.0.0.1"
-                 :port-number        3306}
+ ;;:database-url "jdbc:mysql://127.0.0.1/shop?user=root&password=a5235013"
+ :database-url "jdbc:postgresql://127.0.0.1/spider?user=postgres&password=a5235013"
+
  :arikami-root "/Users/huangyesheng/Documents/project/arikami.com"
  :arikami-test-root "/Users/huangyesheng/Documents/project/arikami.com"
 
- ; 头条
  :win-download-path "e:/ttt/download"
  :win-cookies-path "e:/ttt/cookies"
  :win-dired-path "e:/ttt"
@@ -29,4 +24,7 @@
  :linux-download-path "/usr/local/toutiao2-data"
  :linux-cookies-path "/usr/local/toutiao2-data"
  :linux-dired-path "/usr/local/toutiao2-data"
+
+ ;; 简书cookie
+ :jianshu-cookies "read_mode=day; default_font=font2; locale=zh-CN; remember_user_token=W1sxNzE0MzldLCIkMmEkMTAkMHQ4U1E1aERDT3FOVzlqc25JN1d0TyIsIjE1MzkwNzU0MzEuNjk5MDgyMSJd--42a1b4e25791d33add637c7f8b85b169221f49e3; Hm_lvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1538301439,1538981765,1539074074,1539220262; _m7e_session=f7ef93daee51fd8c5ee38e20c6d0f63f; sensorsdata2015jssdkcross=%7B%22distinct_id%22%3A%22171439%22%2C%22%24device_id%22%3A%2216271d3763d5d8-0abf922b664a43-33627805-1024000-16271d3763e22e%22%2C%22props%22%3A%7B%22%24latest_traffic_source_type%22%3A%22%E8%87%AA%E7%84%B6%E6%90%9C%E7%B4%A2%E6%B5%81%E9%87%8F%22%2C%22%24latest_referrer%22%3A%22https%3A%2F%2Fwww.baidu.com%2Flink%22%2C%22%24latest_referrer_host%22%3A%22www.baidu.com%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC%22%2C%22%24latest_utm_source%22%3A%22desktop%22%2C%22%24latest_utm_medium%22%3A%22index-banner-s%22%2C%22%24latest_utm_campaign%22%3A%22maleskine%22%2C%22%24latest_utm_content%22%3A%22note%22%7D%2C%22first_id%22%3A%2216271d3763d5d8-0abf922b664a43-33627805-1024000-16271d3763e22e%22%7D; Hm_lpvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1539331558"
 }

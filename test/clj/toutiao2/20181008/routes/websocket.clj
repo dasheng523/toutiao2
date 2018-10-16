@@ -28,7 +28,7 @@
   (doseq [uid (:any @connected-uids)]
     (chsk-send! uid msg)))
 
-;(send-msg [:fast-push/is-fast 111])
-;@connected-uids
+(send-msg [:fast-push/is-fast 111])
+@connected-uids
 
 
